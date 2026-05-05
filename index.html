@@ -437,7 +437,7 @@ function waitForFirebase(cb) {
 // ═══════════════════════════════════════════════════════════════════════════════
 let allData = [], currentFilter = 'All', showReceived = false, sortCol = 'Date', sortAsc = false;
 
-function handleDrop(e) { e.preventDefault(); this.classList.remove('drag-over'); processFile(e.dataTransfer.files[0]); }
+
 function handleFileInput(input) { if (input.files[0]) processFile(input.files[0]); }
 
 function processFile(file) {
@@ -461,8 +461,6 @@ function processFile(file) {
         const d = new Date(r.Date); return !isNaN(d) && d >= sixMonthsAgo;
       });
       const ts = 'POs updated ' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-      document.getElementById('loaded-filename').textContent = file.name;
-      document.getElementById('drop-zone').classList.add('has-data');
       document.getElementById('last-updated').textContent = ts;
       updateKPIs(); renderTable();
       window._saveDoc('dashboard/podata', { rows: allData, timestamp: ts, filename: file.name });
@@ -550,8 +548,6 @@ function listenPO() {
         allData = snap.data().rows;
         const ts = snap.data().timestamp || '';
         if(ts) document.getElementById('last-updated').textContent = ts;
-        document.getElementById('loaded-filename').textContent = snap.data().filename || 'Saved import';
-        document.getElementById('drop-zone').classList.add('has-data');
         updateKPIs();
         renderTable();
       }
