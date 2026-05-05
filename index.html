@@ -182,79 +182,52 @@
   .day-cell.fail .day-val { color: #fca5a5; }
   .day-cell.unknown .day-val { color: var(--muted); }
 
+
+  /* ── RMA Tracker ── */
+  .rma-form { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .rma-field { display: flex; flex-direction: column; gap: 4px; }
+  .rma-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; }
+  .rma-field input, .rma-field select { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s; }
+  .rma-field input:focus, .rma-field select:focus { border-color: var(--accent); }
+  .rma-field input::placeholder { color: var(--muted); }
+  .rma-field select option { background: var(--bg3); }
+  .rma-field.wide input { width: 220px; }
+  .rma-field.narrow input { width: 130px; }
+  .rma-field.date input { width: 145px; color-scheme: dark; }
+  .rma-field.status select { width: 160px; }
+  .rma-add-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; align-self: flex-end; white-space: nowrap; }
+  .rma-add-btn:hover { background: var(--accent2); }
+  .rma-empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  .rma-count { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  /* RMA status badges */
+  .badge-rma-submitted  { background: #1e3a5f; color: #93c5fd; }
+  .badge-rma-pending    { background: #422006; color: #fbbf24; }
+  .badge-rma-ordered    { background: #3b1f6e; color: #c4b5fd; }
+  .badge-rma-resolved   { background: #14532d; color: #86efac; }
+
+  
+
   /* ── Footer ── */
   footer { text-align: center; padding: 24px; font-size: 11px; color: var(--muted); opacity: 0.5; }
 
   /* ── Mobile Responsive ── */
-  @media (max-width: 768px) {
-    main { padding: 16px; }
-
-    /* Header */
-    header { padding: 0 16px; height: auto; flex-wrap: wrap; gap: 8px; padding: 10px 16px; }
-    .logo-text { font-size: 13px; }
-    .logo-sub { font-size: 10px; }
-    .logo-mark { width: 30px; height: 30px; font-size: 13px; }
-    .header-right { gap: 8px; flex-wrap: wrap; }
-    #last-updated { font-size: 10px; width: 100%; }
-    .btn { font-size: 11px; padding: 6px 10px; }
-
-    /* Drop zone */
-    #drop-zone { padding: 16px; margin-bottom: 16px; }
-    .drop-title { font-size: 13px; }
-
-    /* KPI cards - 2 column grid */
-    .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 16px; }
-    .kpi { padding: 12px 14px; }
-    .kpi-label { font-size: 10px; }
-    .kpi-value { font-size: 20px; }
-
-    /* Filter bar */
-    .filter-bar { gap: 6px; }
-    .filter-btn { font-size: 11px; padding: 4px 10px; }
-    .search-wrap { width: 100%; margin-left: 0; margin-top: 4px; }
-    .search-wrap input { width: 100%; }
-
-    /* Table - horizontal scroll */
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { min-width: 600px; }
-    thead th { font-size: 10px; padding: 10px 10px; }
-    tbody td { font-size: 12px; padding: 10px 10px; }
-
-    /* Checklist grid - single column */
-    .checklist-grid { grid-template-columns: 1fr; }
-    .checklist-item { padding: 10px 12px; }
-
-    /* Logistics checklist */
-    .logistics-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
-    .logistics-task { width: 100%; }
-    .day-cells { justify-content: flex-start; }
-    .day-cell { width: 32px; height: 28px; }
-
-    /* Chart */
-    .chart-controls { flex-direction: column; gap: 8px; }
-    .chart-field input { width: 100%; }
-    .chart-field { width: 100%; }
-    .add-entry-btn { width: 100%; }
-    .chart-totals { flex-direction: column; gap: 8px; }
-
-    /* Section headers */
-    .section-header { flex-wrap: wrap; gap: 8px; }
-  }
+  
 
   /* ── Mobile Responsive ── */
+  
+
   @media (max-width: 768px) {
     main { padding: 16px; }
 
     /* Header */
-    header { padding: 0 16px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; padding-top: 10px; padding-bottom: 10px; }
-    .logo-text { font-size: 13px; }
+    header { padding: 10px 16px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; }
     .logo-sub { font-size: 10px; }
-    .logo-mark { width: 30px; height: 30px; font-size: 13px; }
     .header-right { gap: 8px; flex-wrap: wrap; }
     #last-updated { font-size: 10px; width: 100%; text-align: right; }
     .btn { font-size: 11px; padding: 6px 10px; }
 
-    /* KPI cards - 2x2 grid + 1 */
+    /* KPI cards */
     .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .kpi { padding: 12px 14px; }
     .kpi-value { font-size: 20px; }
@@ -262,34 +235,50 @@
 
     /* Filter bar */
     .filter-bar { gap: 8px; }
+    .filter-btn { font-size: 11px; padding: 4px 10px; }
     .search-wrap { margin-left: 0; width: 100%; }
     .search-wrap input { width: 100%; }
 
-    /* Table - hide less important columns on mobile */
-    table thead th:nth-child(6),
-    table thead th:nth-child(7),
-    table thead th:nth-child(8),
-    table tbody td:nth-child(6),
-    table tbody td:nth-child(7),
-    table tbody td:nth-child(8) { display: none; }
-    table thead th:nth-child(5),
-    table tbody td:nth-child(5) { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .table-wrap { overflow-x: auto; }
-    tbody td { padding: 10px 10px; font-size: 12px; }
-    thead th { padding: 10px 10px; }
+    /* PO Table */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #po-table thead th:nth-child(6),
+    #po-table thead th:nth-child(7),
+    #po-table thead th:nth-child(8),
+    #po-table tbody td:nth-child(6),
+    #po-table tbody td:nth-child(7),
+    #po-table tbody td:nth-child(8) { display: none; }
+    tbody td { padding: 10px; font-size: 12px; }
+    thead th { padding: 10px; }
+
+    /* RMA table — hide RMA# (col4) and Date (col5), show everything else */
+    #rma-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #rma-wrap table { min-width: 480px; }
+    #rma-wrap thead th:nth-child(4),
+    #rma-wrap thead th:nth-child(5),
+    #rma-wrap tbody td:nth-child(4),
+    #rma-wrap tbody td:nth-child(5) { display: none !important; }
+    #rma-wrap td:nth-child(3) { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #rma-wrap td:nth-child(6) select { font-size: 10px; padding: 2px 4px; }
+    #rma-wrap td:nth-child(7) input { min-width: 80px; }
 
     /* Checklists */
     .checklist-grid { grid-template-columns: 1fr; }
-    .logistics-row { flex-wrap: wrap; gap: 8px; }
+    .checklist-item { padding: 10px 12px; }
+    .logistics-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
     .logistics-task { width: 100%; }
-    .day-cells { width: 100%; justify-content: flex-start; }
+    .day-cells { justify-content: flex-start; }
+    .day-cell { width: 32px; height: 28px; }
 
-    /* Chart controls */
-    .chart-controls { flex-direction: column; align-items: stretch; }
-    .chart-field input { width: 100%; }
-    .add-entry-btn { width: 100%; }
-    .ghost-btn { width: 100%; text-align: center; }
+    /* Chart */
+    .chart-controls { flex-direction: column; gap: 8px; }
+    .chart-field input, .chart-field { width: 100%; }
+    .add-entry-btn, .ghost-btn { width: 100%; text-align: center; }
     .chart-totals { flex-direction: column; gap: 8px; }
+
+    /* RMA form */
+    .rma-form { flex-direction: column; }
+    .rma-field.wide input, .rma-field.narrow input, .rma-field.date input, .rma-field.status select { width: 100%; }
+    .rma-add-btn { width: 100%; }
 
     /* Section headers */
     .section-header { flex-wrap: wrap; gap: 8px; }
@@ -297,7 +286,7 @@
 </style>
 
 <script id="preloaded-data">
-  window.__PRELOADED__ = {"data":[{"Number":"13878","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"WiFi Upfit","VendorRef":"","Tracking":"","Notes":""},{"Number":"13877","Date":"5/3/2026","Vendor":"BAYSIDE ELECTRIC SUPPLY CO., INC.","Status":"Issued","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13876","Date":"5/3/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Issued","Projects":"","VendorRef":"908431","Tracking":"","Notes":"Stock"},{"Number":"13875","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117289","Tracking":"","Notes":"Lanzi"},{"Number":"13874","Date":"5/3/2026","Vendor":"ADI","Status":"Issued","Projects":"","VendorRef":"15404970","Tracking":"","Notes":"for J&S per Jeff"},{"Number":"13873","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117847","Tracking":"FedEX: 518144248431","Notes":""},{"Number":"13872","Date":"4/29/2026","Vendor":"WESCO/ANIXTER","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"Web Order Number 21000225540","Tracking":"","Notes":""},{"Number":"13871","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"Replacement Speaker Grilles","VendorRef":"3106319","Tracking":"FedEX: 518144241172","Notes":""},{"Number":"13870","Date":"4/28/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"","VendorRef":"907757","Tracking":"UPS: 1Z2290910368963075","Notes":"Stock"},{"Number":"13869","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13868","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13867","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"15308089","Tracking":"","Notes":""},{"Number":"13866","Date":"4/27/2026","Vendor":"SONANCE","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"3030149999","Tracking":"UPS: 1Z97Y6030358594474","Notes":""},{"Number":"13865","Date":"4/27/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"82378893","Tracking":"FedEX: 380883718667","Notes":""},{"Number":"13864","Date":"4/27/2026","Vendor":"ADI","Status":"Partially Received","Projects":"CAT6A Drops","VendorRef":"15306521","Tracking":"","Notes":""},{"Number":"13863","Date":"4/26/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Audio","VendorRef":"07491631","Tracking":"UPS: 1ZJ73Y900305525887","Notes":""},{"Number":"13862","Date":"4/26/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Audio","VendorRef":"3030149774","Tracking":"UPS: 1Z97Y6030358628400","Notes":""},{"Number":"13861","Date":"4/26/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"Outdoor Audio","VendorRef":"906269","Tracking":"Delivery on 4/30","Notes":""},{"Number":"13860","Date":"4/26/2026","Vendor":"ADI","Status":"Received","Projects":"Outdoor Audio","VendorRef":"15284264","Tracking":"UPS: 1Z23X7550302065163","Notes":""},{"Number":"13859","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149640","Tracking":"UPS: 1Z97Y6030359576045","Notes":""},{"Number":"13858","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Replace Rear Porch Speakers","VendorRef":"3030149637","Tracking":"UPS: 1Z97Y6030359760863","Notes":""},{"Number":"13857","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Replacement Camera","VendorRef":"","Tracking":"","Notes":""},{"Number":"13856","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149629","Tracking":"UPS: 1Z97Y6030358027354","Notes":""},{"Number":"13855","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"","Tracking":"","Notes":""},{"Number":"13854","Date":"4/23/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3628708","Tracking":"UPS: 1Z4R16040340480196","Notes":""},{"Number":"13853","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":"Stock"},{"Number":"13852","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"","VendorRef":"3030149531","Tracking":"UPS: 1Z97Y6030358211716","Notes":"Shuler"},{"Number":"13851","Date":"4/22/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15246891","Tracking":"UPS: 1Z23X7550302048093","Notes":"For Jeff"},{"Number":"13850","Date":"4/22/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upfit REV 1","VendorRef":"3103985","Tracking":"FedEX: 518144187138","Notes":""},{"Number":"13849","Date":"4/21/2026","Vendor":"SONOS","Status":"Received","Projects":"","VendorRef":"07482911","Tracking":"UPS: 1ZJ73Y900305478090","Notes":"Stock"},{"Number":"13848","Date":"4/21/2026","Vendor":"ALARM.COM","Status":"Received","Projects":"CCTV Camera System UpFit","VendorRef":"1046502","Tracking":"UPS: 1Z7E919E0391301982","Notes":""},{"Number":"13847","Date":"4/20/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15197361","Tracking":"UPS: 1Z23X7550302025616","Notes":""},{"Number":"13846","Date":"4/20/2026","Vendor":"AMAZON.COM","Status":"Received","Projects":"","VendorRef":"111-2595902-1077046","Tracking":"UPS: 1Z1B084X0334641314","Notes":"Per Jamie"},{"Number":"13845","Date":"4/20/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"9103445","Tracking":"FedEX: 513692177038","Notes":"Plantation Village"},{"Number":"13844","Date":"4/19/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13843","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"3625251","Tracking":"ABF: 050946351","Notes":""},{"Number":"13842","Date":"4/7/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15141763","Tracking":"UPS: 1Z23X7550302002739","Notes":"Min/Max Stock"},{"Number":"13841","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"07470227","Tracking":"UPS: 1ZJ73Y900305396099","Notes":""},{"Number":"13840","Date":"4/16/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"3030148474","Tracking":"UPS: 1Z97Y6030360067520","Notes":""},{"Number":"13839","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Sonos Upgrade","VendorRef":"07470191","Tracking":"UPS: 1ZJ73Y900305396240","Notes":""},{"Number":"13838","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Issued","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"","Tracking":"","Notes":""},{"Number":"13837","Date":"4/26/2026","Vendor":"Leon Speakers","Status":"Received","Projects":"Howard Residence-7 Banks","VendorRef":"","Tracking":"","Notes":""},{"Number":"13836","Date":"4/14/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upgrade","VendorRef":"3101330","Tracking":"FedEX: 514281740090","Notes":""},{"Number":"13835","Date":"4/14/2026","Vendor":"SONOS","Status":"Received","Projects":"AV Upgrade","VendorRef":"07466593","Tracking":"UPS: 1ZJ73Y900305372597","Notes":""},{"Number":"13834","Date":"4/14/2026","Vendor":"ACTIVE THERMAL MANAGEMENT","Status":"Received","Projects":"AV Upgrade","VendorRef":"","Tracking":"","Notes":""},{"Number":"13833","Date":"4/14/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"AV Upgrade","VendorRef":"82374087","Tracking":"FedEX: 380535740419","Notes":""},{"Number":"13832","Date":"4/14/2026","Vendor":"DOW ELECTRONICS","Status":"Received","Projects":"AV Upgrade","VendorRef":"SO1105693","Tracking":"ACT: 347667883","Notes":""},{"Number":"13831","Date":"4/13/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"15057004","Tracking":"","Notes":""},{"Number":"13829","Date":"4/12/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"3100406","Tracking":"FedEX: 518144093244","Notes":"Spetrino"}],"timestamp":"Updated May 5, 9:17 AM","showroomItems":[{"id":"foyer","area":"Foyer","detail":"TV / Display / Sound Bar","status":"pass"},{"id":"showroom","area":"Showroom","detail":"Can Lights / Floor Lights / Wall Speakers / Touch Panel","status":"pass"},{"id":"fireplace","area":"Fireplace","detail":"TV / Sound / Control Rack / Shelf Lights","status":"pass"},{"id":"island","area":"Island","detail":"Lights / Pendant Lights / Control Device","status":"pass"},{"id":"couch","area":"Couch Area","detail":"Big TV / Thermostat / Ring Camera","status":"pass"},{"id":"kitchen","area":"Kitchenette","detail":"Wall Lights / TV / Fridge / Lights","status":"pass"},{"id":"theater","area":"Theater Room","detail":"Rack / Control Device / Projector / Sound / Lights / Thermostat","status":"pass"}],"showroomNotes":"","inventoryEntries":[{"date":"2026-05-05","inventory":259377.2,"staging":78565.86}],"logisticsState":{"fleet":{"initials":"JMS","fl1":["pass","unchecked","unchecked","unchecked","unchecked"],"fl2":["pass","unchecked","unchecked","unchecked","unchecked"],"fl3":["pass","unchecked","unchecked","unchecked","unchecked"],"fl4":["unchecked","unchecked","unchecked","unchecked","unchecked"]},"inventory":{"initials":"JMS","in1":["pass","unchecked","unchecked","unchecked","unchecked"],"in2":["pass","unchecked","unchecked","unchecked","unchecked"],"in3":["pass","unchecked","unchecked","unchecked","unchecked"],"in4":["pass","unchecked","unchecked","unchecked","unchecked"]},"facilities":{"initials":"JMS","fa1":["pass","unchecked","unchecked","unchecked","unchecked"],"fa2":["pass","unchecked","unchecked","unchecked","unchecked"],"fa3":["pass","unchecked","unchecked","unchecked","unchecked"],"fa4":["pass","unchecked","unchecked","unchecked","unchecked"],"fa5":["unchecked","unchecked","unchecked","unchecked","unchecked"]}},"logisticsNotes":""};
+  window.__PRELOADED__ = {"data":[{"Number":"13878","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"WiFi Upfit","VendorRef":"","Tracking":"","Notes":""},{"Number":"13877","Date":"5/3/2026","Vendor":"BAYSIDE ELECTRIC SUPPLY CO., INC.","Status":"Issued","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13876","Date":"5/3/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Issued","Projects":"","VendorRef":"908431","Tracking":"","Notes":"Stock"},{"Number":"13875","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117289","Tracking":"","Notes":"Lanzi"},{"Number":"13874","Date":"5/3/2026","Vendor":"ADI","Status":"Issued","Projects":"","VendorRef":"15404970","Tracking":"","Notes":"for J&S per Jeff"},{"Number":"13873","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117847","Tracking":"FedEX: 518144248431","Notes":""},{"Number":"13872","Date":"4/29/2026","Vendor":"WESCO/ANIXTER","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"Web Order Number 21000225540","Tracking":"","Notes":""},{"Number":"13871","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"Replacement Speaker Grilles","VendorRef":"3106319","Tracking":"FedEX: 518144241172","Notes":""},{"Number":"13870","Date":"4/28/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"","VendorRef":"907757","Tracking":"UPS: 1Z2290910368963075","Notes":"Stock"},{"Number":"13869","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13868","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13867","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"15308089","Tracking":"","Notes":""},{"Number":"13866","Date":"4/27/2026","Vendor":"SONANCE","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"3030149999","Tracking":"UPS: 1Z97Y6030358594474","Notes":""},{"Number":"13865","Date":"4/27/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"82378893","Tracking":"FedEX: 380883718667","Notes":""},{"Number":"13864","Date":"4/27/2026","Vendor":"ADI","Status":"Partially Received","Projects":"CAT6A Drops","VendorRef":"15306521","Tracking":"","Notes":""},{"Number":"13863","Date":"4/26/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Audio","VendorRef":"07491631","Tracking":"UPS: 1ZJ73Y900305525887","Notes":""},{"Number":"13862","Date":"4/26/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Audio","VendorRef":"3030149774","Tracking":"UPS: 1Z97Y6030358628400","Notes":""},{"Number":"13861","Date":"4/26/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"Outdoor Audio","VendorRef":"906269","Tracking":"Delivery on 4/30","Notes":""},{"Number":"13860","Date":"4/26/2026","Vendor":"ADI","Status":"Received","Projects":"Outdoor Audio","VendorRef":"15284264","Tracking":"UPS: 1Z23X7550302065163","Notes":""},{"Number":"13859","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149640","Tracking":"UPS: 1Z97Y6030359576045","Notes":""},{"Number":"13858","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Replace Rear Porch Speakers","VendorRef":"3030149637","Tracking":"UPS: 1Z97Y6030359760863","Notes":""},{"Number":"13857","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Replacement Camera","VendorRef":"","Tracking":"","Notes":""},{"Number":"13856","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149629","Tracking":"UPS: 1Z97Y6030358027354","Notes":""},{"Number":"13855","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"","Tracking":"","Notes":""},{"Number":"13854","Date":"4/23/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3628708","Tracking":"UPS: 1Z4R16040340480196","Notes":""},{"Number":"13853","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":"Stock"},{"Number":"13852","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"","VendorRef":"3030149531","Tracking":"UPS: 1Z97Y6030358211716","Notes":"Shuler"},{"Number":"13851","Date":"4/22/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15246891","Tracking":"UPS: 1Z23X7550302048093","Notes":"For Jeff"},{"Number":"13850","Date":"4/22/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upfit REV 1","VendorRef":"3103985","Tracking":"FedEX: 518144187138","Notes":""},{"Number":"13849","Date":"4/21/2026","Vendor":"SONOS","Status":"Received","Projects":"","VendorRef":"07482911","Tracking":"UPS: 1ZJ73Y900305478090","Notes":"Stock"},{"Number":"13848","Date":"4/21/2026","Vendor":"ALARM.COM","Status":"Received","Projects":"CCTV Camera System UpFit","VendorRef":"1046502","Tracking":"UPS: 1Z7E919E0391301982","Notes":""},{"Number":"13847","Date":"4/20/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15197361","Tracking":"UPS: 1Z23X7550302025616","Notes":""},{"Number":"13846","Date":"4/20/2026","Vendor":"AMAZON.COM","Status":"Received","Projects":"","VendorRef":"111-2595902-1077046","Tracking":"UPS: 1Z1B084X0334641314","Notes":"Per Jamie"},{"Number":"13845","Date":"4/20/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"9103445","Tracking":"FedEX: 513692177038","Notes":"Plantation Village"},{"Number":"13844","Date":"4/19/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13843","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"3625251","Tracking":"ABF: 050946351","Notes":""},{"Number":"13842","Date":"4/7/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15141763","Tracking":"UPS: 1Z23X7550302002739","Notes":"Min/Max Stock"},{"Number":"13841","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"07470227","Tracking":"UPS: 1ZJ73Y900305396099","Notes":""},{"Number":"13840","Date":"4/16/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"3030148474","Tracking":"UPS: 1Z97Y6030360067520","Notes":""},{"Number":"13839","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Sonos Upgrade","VendorRef":"07470191","Tracking":"UPS: 1ZJ73Y900305396240","Notes":""},{"Number":"13838","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Issued","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"","Tracking":"","Notes":""},{"Number":"13837","Date":"4/26/2026","Vendor":"Leon Speakers","Status":"Received","Projects":"Howard Residence-7 Banks","VendorRef":"","Tracking":"","Notes":""},{"Number":"13836","Date":"4/14/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upgrade","VendorRef":"3101330","Tracking":"FedEX: 514281740090","Notes":""},{"Number":"13835","Date":"4/14/2026","Vendor":"SONOS","Status":"Received","Projects":"AV Upgrade","VendorRef":"07466593","Tracking":"UPS: 1ZJ73Y900305372597","Notes":""},{"Number":"13834","Date":"4/14/2026","Vendor":"ACTIVE THERMAL MANAGEMENT","Status":"Received","Projects":"AV Upgrade","VendorRef":"","Tracking":"","Notes":""},{"Number":"13833","Date":"4/14/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"AV Upgrade","VendorRef":"82374087","Tracking":"FedEX: 380535740419","Notes":""},{"Number":"13832","Date":"4/14/2026","Vendor":"DOW ELECTRONICS","Status":"Received","Projects":"AV Upgrade","VendorRef":"SO1105693","Tracking":"ACT: 347667883","Notes":""},{"Number":"13831","Date":"4/13/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"15057004","Tracking":"","Notes":""},{"Number":"13829","Date":"4/12/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"3100406","Tracking":"FedEX: 518144093244","Notes":"Spetrino"}],"timestamp":"Updated May 5, 9:43 AM","showroomItems":[{"id":"foyer","area":"Foyer","detail":"TV / Display / Sound Bar","status":"pass"},{"id":"showroom","area":"Showroom","detail":"Can Lights / Floor Lights / Wall Speakers / Touch Panel","status":"pass"},{"id":"fireplace","area":"Fireplace","detail":"TV / Sound / Control Rack / Shelf Lights","status":"pass"},{"id":"island","area":"Island","detail":"Lights / Pendant Lights / Control Device","status":"pass"},{"id":"couch","area":"Couch Area","detail":"Big TV / Thermostat / Ring Camera","status":"pass"},{"id":"kitchen","area":"Kitchenette","detail":"Wall Lights / TV / Fridge / Lights","status":"pass"},{"id":"theater","area":"Theater Room","detail":"Rack / Control Device / Projector / Sound / Lights / Thermostat","status":"pass"}],"showroomNotes":"","inventoryEntries":[{"date":"2026-05-05","inventory":259377.2,"staging":78565.86}],"logisticsState":{"fleet":{"initials":"","fl1":["pass","unchecked","unchecked","unchecked","unchecked"],"fl2":["pass","unchecked","unchecked","unchecked","unchecked"],"fl3":["pass","unchecked","unchecked","unchecked","unchecked"],"fl4":["unchecked","unchecked","unchecked","unchecked","unchecked"]},"inventory":{"initials":"","in1":["pass","unchecked","unchecked","unchecked","unchecked"],"in2":["pass","unchecked","unchecked","unchecked","unchecked"],"in3":["pass","unchecked","unchecked","unchecked","unchecked"],"in4":["pass","unchecked","unchecked","unchecked","unchecked"]},"facilities":{"initials":"","fa1":["pass","unchecked","unchecked","unchecked","unchecked"],"fa2":["pass","unchecked","unchecked","unchecked","unchecked"],"fa3":["pass","unchecked","unchecked","unchecked","unchecked"],"fa4":["pass","unchecked","unchecked","unchecked","unchecked"],"fa5":["unchecked","unchecked","unchecked","unchecked","unchecked"]}},"logisticsNotes":"","rmaData":[]};
 </script></head>
 <body>
 
@@ -309,7 +298,7 @@
     </div>
   </div>
   <div class="header-right">
-    <span id="last-updated">Updated May 5, 9:17 AM</span>
+    <span id="last-updated">Updated May 5, 9:43 AM</span>
     <button class="btn" id="save-btn" onclick="saveSnapshot()" style="background: rgb(22, 163, 74); display: flex;">💾 Save &amp; Share</button>
     <label class="btn" style="cursor:pointer;">
       ⬆ Import D-Tools Export
@@ -455,6 +444,34 @@
     </table>
   </div>
 
+
+  <!-- ── RMA Tracker ── -->
+  <div class="section-header" style="margin-top:36px">
+    <div class="section-title">🔄 Open RMAs <span class="rma-count" id="rma-count"></span></div>
+  </div>
+
+  <div class="rma-form">
+    <div class="rma-field wide"><label>Client</label><input type="text" id="rma-client" placeholder="e.g. Smith Residence"></div>
+    <div class="rma-field wide"><label>Vendor</label><input type="text" id="rma-vendor" placeholder="e.g. Sonos"></div>
+    <div class="rma-field wide"><label>Item / Description</label><input type="text" id="rma-item" placeholder="e.g. Era 300 — defective tweeter"></div>
+    <div class="rma-field narrow"><label>RMA # (if provided)</label><input type="text" id="rma-number" placeholder="Optional"></div>
+    <div class="rma-field date"><label>Date Submitted</label><input type="date" id="rma-date"></div>
+    <div class="rma-field status">
+      <label>Status</label>
+      <select id="rma-status">
+        <option value="Submitted">Submitted</option>
+        <option value="Pending Vendor">Pending Vendor</option>
+        <option value="Replacement Ordered">Replacement Ordered</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+    </div>
+    <button class="rma-add-btn" onclick="addRMA()">+ Add RMA</button>
+  </div>
+
+  <div class="table-wrap" id="rma-wrap">
+    <div class="rma-empty">No open RMAs — add one above</div>
+  </div>
+
   <!-- ── Inventory Chart ── -->
   <div class="section-header">
     <div class="section-title">📦 Inventory Valuations</div>
@@ -536,7 +553,7 @@
       <div class="logistics-section-header">
         <span class="logistics-section-title">Fleet</span>
         <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="JMS" placeholder="JMS" oninput="logisticsState['fleet'].initials=this.value">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['fleet'].initials=this.value">
         </div>
       </div>
       <div class="logistics-row">
@@ -603,7 +620,7 @@
       <div class="logistics-section-header">
         <span class="logistics-section-title">Inventory &amp; Staging</span>
         <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="JMS" placeholder="JMS" oninput="logisticsState['inventory'].initials=this.value">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['inventory'].initials=this.value">
         </div>
       </div>
       <div class="logistics-row">
@@ -683,7 +700,7 @@
       <div class="logistics-section-header">
         <span class="logistics-section-title">Facilities</span>
         <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="JMS" placeholder="JMS" oninput="logisticsState['facilities'].initials=this.value">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['facilities'].initials=this.value">
         </div>
       </div>
       <div class="logistics-row">
@@ -1145,6 +1162,108 @@ function renderLogistics() {
   }).join('');
 }
 
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RMA TRACKER
+// ═══════════════════════════════════════════════════════════════════════════════
+let rmaData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  const rmaDateEl = document.getElementById('rma-date');
+  if (rmaDateEl) rmaDateEl.value = today;
+});
+
+function addRMA() {
+  const client  = document.getElementById('rma-client').value.trim();
+  const vendor  = document.getElementById('rma-vendor').value.trim();
+  const item    = document.getElementById('rma-item').value.trim();
+  const number  = document.getElementById('rma-number').value.trim();
+  const date    = document.getElementById('rma-date').value;
+  const status  = document.getElementById('rma-status').value;
+
+  if (!vendor || !item) { alert('Please enter at least a vendor and item description.'); return; }
+
+  rmaData.push({ id: Date.now(), client, vendor, item, number, date, status, notes: '' });
+
+  document.getElementById('rma-client').value  = '';
+  document.getElementById('rma-vendor').value  = '';
+  document.getElementById('rma-item').value    = '';
+  document.getElementById('rma-number').value  = '';
+  document.getElementById('rma-status').value  = 'Submitted';
+
+  renderRMA();
+}
+
+function updateRMAStatus(id, val) {
+  const r = rmaData.find(r => r.id === id);
+  if (r) { r.status = val; renderRMA(); }
+}
+
+function updateRMANotes(id, val) {
+  const r = rmaData.find(r => r.id === id);
+  if (r) r.notes = val;
+}
+
+function removeRMA(id) {
+  rmaData = rmaData.filter(r => r.id !== id);
+  renderRMA();
+}
+
+function rmaBadgeClass(status) {
+  if (status === 'Submitted')          return 'badge-rma-submitted';
+  if (status === 'Pending Vendor')     return 'badge-rma-pending';
+  if (status === 'Replacement Ordered')return 'badge-rma-ordered';
+  if (status === 'Resolved')           return 'badge-rma-resolved';
+  return 'badge-rma-submitted';
+}
+
+function renderRMA() {
+  const open = rmaData.filter(r => r.status !== 'Resolved');
+  const count = open.length;
+  document.getElementById('rma-count').textContent = count > 0 ? `· ${count} open` : '';
+
+  const wrap = document.getElementById('rma-wrap');
+  if (rmaData.length === 0) {
+    wrap.innerHTML = '<div class="rma-empty">No open RMAs — add one above</div>';
+    return;
+  }
+
+  wrap.innerHTML = `<table>
+    <thead>
+      <tr>
+        <th>Client</th>
+        <th>Vendor</th>
+        <th>Item / Description</th>
+        <th>RMA #</th>
+        <th>Date Submitted</th>
+        <th>Status</th>
+        <th>Notes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rmaData.map(r => `
+        <tr class="fade-in ${r.status === 'Resolved' ? 'row-received' : ''}">
+          <td><span class="project-name">${r.client || '<span style="opacity:0.3">—</span>'}</span></td>
+          <td><span class="vendor-name">${r.vendor}</span></td>
+          <td style="max-width:260px">${r.item}</td>
+          <td><span class="po-num">${r.number || '<span style="opacity:0.3">—</span>'}</span></td>
+          <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
+          <td>
+            <select onchange="updateRMAStatus(${r.id}, this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer">
+              ${['Submitted','Pending Vendor','Replacement Ordered','Resolved'].map(s =>
+                `<option value="${s}" ${s === r.status ? 'selected' : ''}>${s}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td><input type="text" value="${r.notes}" onchange="updateRMANotes(${r.id}, this.value)" placeholder="Add notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:100%;padding:2px 0;min-width:140px"></td>
+          <td><button onclick="removeRMA(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px" title="Remove">✕</button></td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // INVENTORY CHART
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1262,6 +1381,7 @@ function saveSnapshot() {
     inventoryEntries,
     logisticsState,
     logisticsNotes,
+    rmaData,
   };
   const dataScript = `\n<script id="preloaded-data">\n  window.__PRELOADED__ = ${JSON.stringify(payload)};\n<\/script>`;
   const html = document.documentElement.outerHTML.replace('</head>', dataScript + '</head>');
@@ -1289,6 +1409,7 @@ window.addEventListener('DOMContentLoaded', () => {
     if (p.showroomNotes) document.getElementById('showroom-notes').value = p.showroomNotes;
     if (p.inventoryEntries) { inventoryEntries = p.inventoryEntries; renderInventoryChart(); }
     if (p.logisticsState) logisticsState = p.logisticsState;
+    if (p.rmaData) { rmaData = p.rmaData; renderRMA(); }
     if (p.logisticsNotes) document.getElementById('logistics-notes').value = p.logisticsNotes;
   }
   renderChecklist('showroom');
@@ -1301,6 +1422,5 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 </script>
-
 
 </body></html>
