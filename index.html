@@ -1,0 +1,1196 @@
+<html lang="en"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Port City Sound &amp; Security — Logistics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Syne:wght@600;700;800&amp;family=DM+Sans:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:        #0e1117;
+    --bg2:       #151a24;
+    --bg3:       #1c2333;
+    --border:    rgba(255,255,255,0.07);
+    --border2:   rgba(255,255,255,0.12);
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --accent:    #3b82f6;
+    --accent2:   #1d4ed8;
+    --issued-bg:   #1e3a5f; --issued-fg:   #93c5fd;
+    --partial-bg:  #422006; --partial-fg:  #fbbf24;
+    --received-bg: #14532d; --received-fg: #86efac;
+    --draft-bg:    #1e293b; --draft-fg:    #94a3b8;
+    --cancelled-bg:#450a0a; --cancelled-fg:#fca5a5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; line-height: 1.5; }
+
+  /* ── Header ── */
+  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: white; flex-shrink: 0; }
+  .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); letter-spacing: -0.3px; }
+  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; letter-spacing: 0.5px; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  #last-updated { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; gap: 6px; }
+  .btn:hover { background: var(--accent2); transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+
+  /* ── Main ── */
+  main { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+
+  /* ── Drop zone ── */
+  #drop-zone { border: 2px dashed var(--border2); border-radius: 14px; padding: 28px; text-align: center; margin-bottom: 28px; transition: all 0.2s; background: var(--bg2); cursor: pointer; position: relative; }
+  #drop-zone.drag-over { border-color: var(--accent); background: rgba(59,130,246,0.08); }
+  #drop-zone.has-data { padding: 14px 28px; border-style: solid; border-color: var(--border); }
+  #drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 28px; margin-bottom: 8px; }
+  .drop-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+  .drop-sub { font-size: 12px; color: var(--muted); }
+  .drop-compact { display: none; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  #drop-zone.has-data .drop-icon, #drop-zone.has-data .drop-title, #drop-zone.has-data .drop-sub { display: none; }
+  #drop-zone.has-data .drop-compact { display: flex; justify-content: center; }
+
+  /* ── KPIs ── */
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
+  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; transition: border-color 0.2s; display: flex; flex-direction: column; justify-content: center; }
+  .kpi:hover { border-color: var(--border2); }
+  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; margin-bottom: 6px; }
+  .kpi-value { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; line-height: 1; color: var(--text); }
+  .kpi-value.blue   { color: #93c5fd; }
+  .kpi-value.yellow { color: #fbbf24; }
+  .kpi-value.green  { color: #86efac; }
+  .kpi-value.gray   { color: #94a3b8; }
+
+  /* ── Filter bar ── */
+  .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .filter-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .filter-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .filter-btn.toggle-received { border-color: var(--received-bg); color: #86efac; }
+  .filter-btn.toggle-received.on { background: #14532d; border-color: #16a34a; color: #86efac; }
+  .search-wrap { margin-left: auto; position: relative; }
+  .search-wrap input { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px 7px 32px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; width: 220px; outline: none; transition: border-color 0.15s; }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+
+  /* ── Table ── */
+  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { padding: 12px 16px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; background: var(--bg3); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  thead th:hover { color: var(--text); }
+  thead th .sort-arrow { opacity: 0.4; margin-left: 4px; }
+  thead th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.025); }
+  tbody tr.row-received { opacity: 0.5; }
+  tbody td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: middle; }
+  .po-num { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; letter-spacing: 0.3px; }
+  .badge-issued    { background: var(--issued-bg);    color: var(--issued-fg); }
+  .badge-partial   { background: var(--partial-bg);   color: var(--partial-fg); }
+  .badge-received  { background: var(--received-bg);  color: var(--received-fg); }
+  .badge-draft     { background: var(--draft-bg);     color: var(--draft-fg); }
+  .badge-cancelled { background: var(--cancelled-bg); color: var(--cancelled-fg); }
+  .vendor-name { font-weight: 500; }
+  .project-name { color: #94a3b8; font-size: 12px; }
+  .tracking-link { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; text-decoration: none; transition: border-color 0.15s; }
+  .tracking-link:hover { border-color: var(--accent); }
+  .tracking-plain { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; }
+  .notes-text { color: var(--muted); font-size: 12px; font-style: italic; }
+
+  /* ── Empty state ── */
+  #empty-state { text-align: center; padding: 80px 32px; }
+  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+  .empty-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; color: var(--muted); opacity: 0.7; }
+
+  /* ── Section headers ── */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin: 36px 0 14px; }
+  .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .ghost-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .ghost-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  /* ── Checklist grid ── */
+  .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .checklist-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: opacity 0.15s; }
+  .checklist-item:hover { opacity: 0.85; }
+  .checklist-item.pass    { border-left: 3px solid #16a34a; }
+  .checklist-item.fail    { border-left: 3px solid #dc2626; }
+  .checklist-item.unknown { border-left: 3px solid #334155; }
+  .checklist-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .checklist-dot.pass    { background: #14532d; }
+  .checklist-dot.fail    { background: #450a0a; }
+  .checklist-dot.unknown { background: #1e293b; }
+  .checklist-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
+  .checklist-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Notes box ── */
+  .notes-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 28px; }
+  .notes-box label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 8px; }
+  .notes-box textarea { width: 100%; background: transparent; border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: vertical; outline: none; min-height: 70px; line-height: 1.6; }
+  .notes-box textarea::placeholder { color: var(--muted); opacity: 0.6; }
+
+  /* ── Inventory Chart ── */
+  .chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 28px; }
+  .chart-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
+  .chart-field { display: flex; flex-direction: column; gap: 4px; }
+  .chart-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; }
+  .chart-field input { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Mono', monospace; width: 160px; outline: none; transition: border-color 0.15s; }
+  .chart-field input:focus { border-color: var(--accent); }
+  .chart-field input[type="date"] { width: 150px; color-scheme: dark; }
+  .add-entry-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; align-self: flex-end; transition: background 0.15s; }
+  .add-entry-btn:hover { background: var(--accent2); }
+  .chart-totals { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
+  .chart-total { font-size: 12px; color: var(--muted); }
+  .chart-total span { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .chart-total span.inv  { color: #93c5fd; }
+  .chart-total span.stg  { color: #86efac; }
+  .chart-total span.comb { color: #fbbf24; }
+  canvas#inv-chart { max-height: 260px; }
+  .no-chart-data { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
+
+  /* ── Animations ── */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  tr.fade-in { animation: fadeIn 0.25s ease forwards; }
+
+
+  /* ── Logistics Checklist Table ── */
+  .logistics-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+  .logistics-section-header { padding: 12px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .logistics-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
+  .logistics-initials { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 8px; }
+  .logistics-initials input { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px; width: 70px; outline: none; }
+  .logistics-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
+  .logistics-row:last-child { border-bottom: none; }
+  .logistics-row.monthly { opacity: 0.6; }
+  .logistics-task { flex: 1; font-size: 12px; color: var(--text); line-height: 1.4; }
+  .logistics-task .monthly-tag { font-size: 10px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
+  .day-cells { display: flex; gap: 4px; flex-shrink: 0; }
+  .day-cell { width: 36px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; flex-direction: column; gap: 0; }
+  .day-cell .day-label { font-size: 8px; color: var(--muted); font-weight: 500; letter-spacing: 0.5px; line-height: 1; margin-bottom: 2px; }
+  .day-cell .day-val { font-size: 12px; line-height: 1; }
+  .day-cell:hover { border-color: var(--border2); }
+  .day-cell.pass { background: #14532d; border-color: #16a34a; }
+  .day-cell.pass .day-val { color: #86efac; }
+  .day-cell.fail { background: #450a0a; border-color: #dc2626; }
+  .day-cell.fail .day-val { color: #fca5a5; }
+  .day-cell.unknown .day-val { color: var(--muted); }
+
+  /* ── Footer ── */
+  footer { text-align: center; padding: 24px; font-size: 11px; color: var(--muted); opacity: 0.5; }
+</style>
+
+<script id="preloaded-data">
+  window.__PRELOADED__ = {"data":[{"Number":"13878","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"WiFi Upfit","VendorRef":"","Tracking":"","Notes":""},{"Number":"13877","Date":"5/3/2026","Vendor":"BAYSIDE ELECTRIC SUPPLY CO., INC.","Status":"Issued","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13876","Date":"5/3/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Issued","Projects":"","VendorRef":"908431","Tracking":"","Notes":"Stock"},{"Number":"13875","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117289","Tracking":"","Notes":"Lanzi"},{"Number":"13874","Date":"5/3/2026","Vendor":"ADI","Status":"Issued","Projects":"","VendorRef":"15404970","Tracking":"","Notes":"for J&S per Jeff"},{"Number":"13873","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117847","Tracking":"FedEX: 518144248431","Notes":""},{"Number":"13872","Date":"4/29/2026","Vendor":"WESCO/ANIXTER","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"Web Order Number 21000225540","Tracking":"","Notes":""},{"Number":"13871","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"Replacement Speaker Grilles","VendorRef":"3106319","Tracking":"FedEX: 518144241172","Notes":""},{"Number":"13870","Date":"4/28/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"","VendorRef":"907757","Tracking":"UPS: 1Z2290910368963075","Notes":"Stock"},{"Number":"13869","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13868","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13867","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"15308089","Tracking":"","Notes":""},{"Number":"13866","Date":"4/27/2026","Vendor":"SONANCE","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"3030149999","Tracking":"UPS: 1Z97Y6030358594474","Notes":""},{"Number":"13865","Date":"4/27/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"82378893","Tracking":"FedEX: 380883718667","Notes":""},{"Number":"13864","Date":"4/27/2026","Vendor":"ADI","Status":"Partially Received","Projects":"CAT6A Drops","VendorRef":"15306521","Tracking":"","Notes":""},{"Number":"13863","Date":"4/26/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Audio","VendorRef":"07491631","Tracking":"UPS: 1ZJ73Y900305525887","Notes":""},{"Number":"13862","Date":"4/26/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Audio","VendorRef":"3030149774","Tracking":"UPS: 1Z97Y6030358628400","Notes":""},{"Number":"13861","Date":"4/26/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"Outdoor Audio","VendorRef":"906269","Tracking":"Delivery on 4/30","Notes":""},{"Number":"13860","Date":"4/26/2026","Vendor":"ADI","Status":"Received","Projects":"Outdoor Audio","VendorRef":"15284264","Tracking":"UPS: 1Z23X7550302065163","Notes":""},{"Number":"13859","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149640","Tracking":"UPS: 1Z97Y6030359576045","Notes":""},{"Number":"13858","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Replace Rear Porch Speakers","VendorRef":"3030149637","Tracking":"UPS: 1Z97Y6030359760863","Notes":""},{"Number":"13857","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Replacement Camera","VendorRef":"","Tracking":"","Notes":""},{"Number":"13856","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149629","Tracking":"UPS: 1Z97Y6030358027354","Notes":""},{"Number":"13855","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"","Tracking":"","Notes":""},{"Number":"13854","Date":"4/23/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3628708","Tracking":"UPS: 1Z4R16040340480196","Notes":""},{"Number":"13853","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":"Stock"},{"Number":"13852","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"","VendorRef":"3030149531","Tracking":"UPS: 1Z97Y6030358211716","Notes":"Shuler"},{"Number":"13851","Date":"4/22/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15246891","Tracking":"UPS: 1Z23X7550302048093","Notes":"For Jeff"},{"Number":"13850","Date":"4/22/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upfit REV 1","VendorRef":"3103985","Tracking":"FedEX: 518144187138","Notes":""},{"Number":"13849","Date":"4/21/2026","Vendor":"SONOS","Status":"Received","Projects":"","VendorRef":"07482911","Tracking":"UPS: 1ZJ73Y900305478090","Notes":"Stock"},{"Number":"13848","Date":"4/21/2026","Vendor":"ALARM.COM","Status":"Received","Projects":"CCTV Camera System UpFit","VendorRef":"1046502","Tracking":"UPS: 1Z7E919E0391301982","Notes":""},{"Number":"13847","Date":"4/20/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15197361","Tracking":"UPS: 1Z23X7550302025616","Notes":""},{"Number":"13846","Date":"4/20/2026","Vendor":"AMAZON.COM","Status":"Received","Projects":"","VendorRef":"111-2595902-1077046","Tracking":"UPS: 1Z1B084X0334641314","Notes":"Per Jamie"},{"Number":"13845","Date":"4/20/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"9103445","Tracking":"FedEX: 513692177038","Notes":"Plantation Village"},{"Number":"13844","Date":"4/19/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13843","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"3625251","Tracking":"ABF: 050946351","Notes":""},{"Number":"13842","Date":"4/7/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15141763","Tracking":"UPS: 1Z23X7550302002739","Notes":"Min/Max Stock"},{"Number":"13841","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"07470227","Tracking":"UPS: 1ZJ73Y900305396099","Notes":""},{"Number":"13840","Date":"4/16/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"3030148474","Tracking":"UPS: 1Z97Y6030360067520","Notes":""},{"Number":"13839","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Sonos Upgrade","VendorRef":"07470191","Tracking":"UPS: 1ZJ73Y900305396240","Notes":""},{"Number":"13838","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Issued","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"","Tracking":"","Notes":""},{"Number":"13837","Date":"4/26/2026","Vendor":"Leon Speakers","Status":"Received","Projects":"Howard Residence-7 Banks","VendorRef":"","Tracking":"","Notes":""},{"Number":"13836","Date":"4/14/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upgrade","VendorRef":"3101330","Tracking":"FedEX: 514281740090","Notes":""},{"Number":"13835","Date":"4/14/2026","Vendor":"SONOS","Status":"Received","Projects":"AV Upgrade","VendorRef":"07466593","Tracking":"UPS: 1ZJ73Y900305372597","Notes":""},{"Number":"13834","Date":"4/14/2026","Vendor":"ACTIVE THERMAL MANAGEMENT","Status":"Received","Projects":"AV Upgrade","VendorRef":"","Tracking":"","Notes":""},{"Number":"13833","Date":"4/14/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"AV Upgrade","VendorRef":"82374087","Tracking":"FedEX: 380535740419","Notes":""},{"Number":"13832","Date":"4/14/2026","Vendor":"DOW ELECTRONICS","Status":"Received","Projects":"AV Upgrade","VendorRef":"SO1105693","Tracking":"ACT: 347667883","Notes":""},{"Number":"13831","Date":"4/13/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"15057004","Tracking":"","Notes":""},{"Number":"13829","Date":"4/12/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"3100406","Tracking":"FedEX: 518144093244","Notes":"Spetrino"}],"timestamp":"Updated May 5, 8:14 AM","showroomItems":[{"id":"foyer","area":"Foyer","detail":"TV / Display / Sound Bar","status":"pass"},{"id":"showroom","area":"Showroom","detail":"Can Lights / Floor Lights / Wall Speakers / Touch Panel","status":"pass"},{"id":"fireplace","area":"Fireplace","detail":"TV / Sound / Control Rack / Shelf Lights","status":"pass"},{"id":"island","area":"Island","detail":"Lights / Pendant Lights / Control Device","status":"pass"},{"id":"couch","area":"Couch Area","detail":"Big TV / Thermostat / Ring Camera","status":"pass"},{"id":"kitchen","area":"Kitchenette","detail":"Wall Lights / TV / Fridge / Lights","status":"pass"},{"id":"theater","area":"Theater Room","detail":"Rack / Control Device / Projector / Sound / Lights / Thermostat","status":"pass"}],"showroomNotes":"","inventoryEntries":[],"logisticsState":{"fleet":{"initials":"","fl1":["pass","unchecked","unchecked","unchecked","unchecked"],"fl2":["pass","unchecked","unchecked","unchecked","unchecked"],"fl3":["pass","unchecked","unchecked","unchecked","unchecked"],"fl4":["unchecked","unchecked","unchecked","unchecked","unchecked"]},"inventory":{"initials":"","in1":["pass","unchecked","unchecked","unchecked","unchecked"],"in2":["pass","unchecked","unchecked","unchecked","unchecked"],"in3":["pass","unchecked","unchecked","unchecked","unchecked"],"in4":["pass","unchecked","unchecked","unchecked","unchecked"]},"facilities":{"initials":"","fa1":["pass","unchecked","unchecked","unchecked","unchecked"],"fa2":["pass","unchecked","unchecked","unchecked","unchecked"],"fa3":["pass","unchecked","unchecked","unchecked","unchecked"],"fa4":["pass","unchecked","unchecked","unchecked","unchecked"],"fa5":["unchecked","unchecked","unchecked","unchecked","unchecked"]}},"logisticsNotes":""};
+</script></head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">PC</div>
+    <div>
+      <div class="logo-text">Port City Sound &amp; Security</div>
+      <div class="logo-sub">Logistics Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="last-updated">Updated May 5, 8:14 AM</span>
+    <button class="btn" id="save-btn" onclick="saveSnapshot()" style="background: rgb(22, 163, 74); display: flex;">💾 Save &amp; Share</button>
+    <label class="btn" style="cursor:pointer;">
+      ⬆ Import D-Tools Export
+      <input type="file" accept=".xlsx,.csv" style="display:none" onchange="handleFileInput(this)">
+    </label>
+  </div>
+</header>
+
+<main>
+
+  <!-- Drop Zone -->
+  <div id="drop-zone" ondragover="event.preventDefault(); this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)" class="has-data">
+    <input type="file" accept=".xlsx,.csv" onchange="handleFileInput(this)">
+    <div class="drop-icon">📂</div>
+    <div class="drop-title">Drop your D-Tools PO export here</div>
+    <div class="drop-sub">Supports .xlsx or .csv — drag and drop to refresh</div>
+    <div class="drop-compact">
+      <span>📄</span><span id="loaded-filename">Purchase Orders - May 05, 2026 07 52.xlsx</span>
+      <span style="color:#4ade80">✓ Loaded</span>
+      <span style="opacity:0.5">· Drop a new file to refresh</span>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi"><div class="kpi-label">Total POs</div><div class="kpi-value" id="kpi-total">49</div></div>
+    <div class="kpi"><div class="kpi-label">Issued</div><div class="kpi-value blue" id="kpi-issued">7</div></div>
+    <div class="kpi"><div class="kpi-label">Partially Received</div><div class="kpi-value yellow" id="kpi-partial">1</div></div>
+    <div class="kpi"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">41</div></div>
+    <div class="kpi"><div class="kpi-label">Draft</div><div class="kpi-value gray" id="kpi-draft">0</div></div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn active" onclick="setFilter('All', this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Issued', this)">Issued</button>
+    <button class="filter-btn" onclick="setFilter('Partially Received', this)">Partially Received</button>
+    <button class="filter-btn" onclick="setFilter('Draft', this)">Draft</button>
+    <button class="filter-btn toggle-received" id="toggle-received-btn" onclick="toggleReceived()">Show Received</button>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search vendor, project, PO #…" oninput="renderTable()">
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table id="po-table">
+      <thead>
+        <tr>
+          <th onclick="sortBy('Number')">PO # <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('Date')">Date <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('Vendor')">Vendor <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('Status')">Status <span class="sort-arrow">↕</span></th>
+          <th onclick="sortBy('Projects')">Project <span class="sort-arrow">↕</span></th>
+          <th>Vendor Ref #</th>
+          <th>Tracking</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody id="po-tbody">
+    <tr class="fade-in " style="animation-delay:0s">
+      <td><span class="po-num">13878</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
+      <td><span class="vendor-name">SNAP ONE</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name">WiFi Upfit</span></td>
+      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text"></span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.02s">
+      <td><span class="po-num">13877</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
+      <td><span class="vendor-name">BAYSIDE ELECTRIC SUPPLY CO., INC.</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name">Vineyard Trails- Access Control and Cameras</span></td>
+      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text"></span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.04s">
+      <td><span class="po-num">13876</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
+      <td><span class="vendor-name">21st CENTURY DISTRIBUTING</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
+      <td><span class="po-num">908431</span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text">Stock</span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.06s">
+      <td><span class="po-num">13875</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
+      <td><span class="vendor-name">SNAP ONE</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
+      <td><span class="po-num">9117289</span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text">Lanzi</span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.08s">
+      <td><span class="po-num">13874</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
+      <td><span class="vendor-name">ADI</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
+      <td><span class="po-num">15404970</span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text">for J&amp;S per Jeff</span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.1s">
+      <td><span class="po-num">13873</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/29/2026</td>
+      <td><span class="vendor-name">SNAP ONE</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
+      <td><span class="po-num">9117847</span></td>
+      <td><a href="https://www.fedex.com/fedextrack/?trknbr=518144248431" target="_blank" class="tracking-link" title="Track with FEDEX">518144248431 ↗</a></td>
+      <td><span class="notes-text"></span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.12s">
+      <td><span class="po-num">13864</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/27/2026</td>
+      <td><span class="vendor-name">ADI</span></td>
+      <td><span class="badge badge-partial">Partially Received</span></td>
+      <td><span class="project-name">CAT6A Drops</span></td>
+      <td><span class="po-num">15306521</span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text"></span></td>
+    </tr>
+    <tr class="fade-in " style="animation-delay:0.14s">
+      <td><span class="po-num">13838</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/16/2026</td>
+      <td><span class="vendor-name">CRESTRON ELECTRONICS</span></td>
+      <td><span class="badge badge-issued">Issued</span></td>
+      <td><span class="project-name">Simons Residence - 1140 Vanderhorst Way</span></td>
+      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
+      <td><span style="opacity:0.3">—</span></td>
+      <td><span class="notes-text"></span></td>
+    </tr></tbody>
+    </table>
+  </div>
+
+  <!-- ── Inventory Chart ── -->
+  <div class="section-header">
+    <div class="section-title">📦 Inventory Valuations</div>
+  </div>
+  <div class="chart-wrap">
+    <div class="chart-controls">
+      <div class="chart-field">
+        <label>Date</label>
+        <input type="date" id="inv-date">
+      </div>
+      <div class="chart-field">
+        <label>Inventory ($)</label>
+        <input type="number" id="inv-inventory" placeholder="259377.20" step="0.01">
+      </div>
+      <div class="chart-field">
+        <label>Staging ($)</label>
+        <input type="number" id="inv-staging" placeholder="78565.86" step="0.01">
+      </div>
+      <button class="add-entry-btn" onclick="addInventoryEntry()">+ Add Entry</button>
+      <button class="ghost-btn" onclick="clearLastEntry()" style="align-self:flex-end">✕ Remove Last</button>
+    </div>
+    <div class="chart-totals" id="chart-totals"></div>
+    <div id="chart-area">
+      <div class="no-chart-data">No entries yet — add your first inventory total above</div>
+    </div>
+  </div>
+
+  <!-- ── Showroom Checklist ── -->
+  <div class="section-header">
+    <div class="section-title">🏠 Showroom Weekly Checklist
+      <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace">· Week of May 4, 2026</span>
+    </div>
+    <button class="ghost-btn" onclick="resetChecklist('showroom')">↺ Reset Week</button>
+  </div>
+  <div id="showroom-grid" class="checklist-grid"><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','foyer')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Foyer</div><div class="checklist-sub">TV / Display / Sound Bar</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','showroom')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Showroom</div><div class="checklist-sub">Can Lights / Floor Lights / Wall Speakers / Touch Panel</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','fireplace')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Fireplace</div><div class="checklist-sub">TV / Sound / Control Rack / Shelf Lights</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','island')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Island</div><div class="checklist-sub">Lights / Pendant Lights / Control Device</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','couch')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Couch Area</div><div class="checklist-sub">Big TV / Thermostat / Ring Camera</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','kitchen')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Kitchenette</div><div class="checklist-sub">Wall Lights / TV / Fridge / Lights</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','theater')" title="Click to toggle">
+      <div class="checklist-dot pass">✓</div>
+      <div style="flex:1"><div class="checklist-name">Theater Room</div><div class="checklist-sub">Rack / Control Device / Projector / Sound / Lights / Thermostat</div></div>
+      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
+    </div></div>
+  <div class="notes-box">
+    <label>Showroom Notes</label>
+    <textarea id="showroom-notes" placeholder="Note any issues, failures, or follow-ups here…"></textarea>
+  </div>
+
+
+  <!-- ── Logistics Checklist ── -->
+  <div class="section-header">
+    <div class="section-title">📋 Logistics Checklist
+      <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace">· Week of May 4, 2026</span>
+    </div>
+    <button class="ghost-btn" onclick="resetLogistics()">↺ Reset Week</button>
+  </div>
+  <div id="logistics-wrap"><div class="logistics-section">
+      <div class="logistics-section-header">
+        <span class="logistics-section-title">Fleet</span>
+        <div class="logistics-initials">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['fleet'].initials=this.value">
+        </div>
+      </div>
+      <div class="logistics-row">
+        <div class="logistics-task">All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl1',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Service appointments made for any vehicle issues.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl2',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Inspect vinyl condition and overall exterior presentation of vehicles.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl3',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row monthly">
+        <div class="logistics-task">Van products, parts, and tools inventoried and adjusted as needed.<span class="monthly-tag">Monthly</span></div>
+        <div class="day-cells"><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl4',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
+          <span class="day-val" style="font-size:11px;font-weight:600;color:#64748b">Mark Done</span>
+        </div></div>
+      </div>
+    </div><div class="logistics-section">
+      <div class="logistics-section-header">
+        <span class="logistics-section-title">Inventory &amp; Staging</span>
+        <div class="logistics-initials">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['inventory'].initials=this.value">
+        </div>
+      </div>
+      <div class="logistics-row">
+        <div class="logistics-task">All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in1',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in2',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Process any defective items for RMA return and reorder any necessary replacement parts.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in3',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Organize and clean trash and debris from warehouse.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in4',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div>
+    </div><div class="logistics-section">
+      <div class="logistics-section-header">
+        <span class="logistics-section-title">Facilities</span>
+        <div class="logistics-initials">
+          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['facilities'].initials=this.value">
+        </div>
+      </div>
+      <div class="logistics-row">
+        <div class="logistics-task">Be present at Morning Stand Up.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa1',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa2',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">All van keys are accounted for at the start/end of shift.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa3',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row">
+        <div class="logistics-task">Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.</div>
+        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa4',0)" title="Mon">
+            <span class="day-label">M</span>
+            <span class="day-val">✓</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',1)" title="Tue">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',2)" title="Wed">
+            <span class="day-label">W</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',3)" title="Thu">
+            <span class="day-label">T</span>
+            <span class="day-val">·</span>
+          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',4)" title="Fri">
+            <span class="day-label">F</span>
+            <span class="day-val">·</span>
+          </div></div>
+      </div><div class="logistics-row monthly">
+        <div class="logistics-task">Fire extinguishers and first aid kits checked and restocked when necessary.<span class="monthly-tag">Monthly</span></div>
+        <div class="day-cells"><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa5',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
+          <span class="day-val" style="font-size:11px;font-weight:600;color:#64748b">Mark Done</span>
+        </div></div>
+      </div>
+    </div></div>
+  <div class="notes-box">
+    <label>Logistics Notes</label>
+    <textarea id="logistics-notes" placeholder="Note any issues, follow-ups, or observations here…"></textarea>
+  </div>
+
+
+</main>
+
+<footer>Port City Sound &amp; Security · Logistics Dashboard · Data sourced from D-Tools SI</footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// PO DATA
+// ═══════════════════════════════════════════════════════════════════════════════
+let allData = [];
+let currentFilter = 'All';
+let showReceived = false;
+let sortCol = 'Date';
+let sortAsc = false;
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileInput(input) {
+  const file = input.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const sixMonthsAgo = new Date();
+      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+      allData = rows.map(row => ({
+        Number:    String(row['Number'] || row['PO #'] || row['PO#'] || '').trim(),
+        Date:      formatDate(row['Date']),
+        Vendor:    String(row['Vendor'] || '').trim(),
+        Status:    String(row['Status'] || '').trim(),
+        Projects:  cleanProject(String(row['Projects'] || '')),
+        VendorRef: String(row['Vendor Reference Number'] || row['Vendor Ref'] || '').trim(),
+        Tracking:  String(row['Tracking Number'] || row['Tracking'] || '').trim(),
+        Notes:     String(row['Notes'] || '').trim(),
+      })).filter(r => {
+        if (r.Status !== 'Received') return true;
+        const d = new Date(r.Date);
+        return !isNaN(d) && d >= sixMonthsAgo;
+      });
+      document.getElementById('loaded-filename').textContent = file.name;
+      document.getElementById('drop-zone').classList.add('has-data');
+      const ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      document.getElementById('last-updated').textContent = 'Updated ' + ts;
+      document.getElementById('save-btn').style.display = 'flex';
+      updateKPIs();
+      renderTable();
+    } catch(err) {
+      alert("Could not read file. Make sure it's a D-Tools .xlsx or .csv export.");
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number') {
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
+  }
+  return String(val);
+}
+
+function cleanProject(raw) {
+  if (!raw.trim()) return '';
+  let p = raw;
+  if (p.includes(' : ')) p = p.split(' : ')[1];
+  p = p.replace(/\s*\(PORT\s*-?\s*\d+\)\s*$/i, '').trim();
+  return p;
+}
+
+// ── Tracking link helper ─────────────────────────────────────────────────────
+function trackingLink(raw) {
+  if (!raw) return '<span style="opacity:0.3">—</span>';
+  const str = raw.trim();
+  const lower = str.toLowerCase();
+
+  let carrier = '';
+  let number  = str;
+
+  // Try to split "Carrier: NUMBER" format
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    carrier = parts[0].trim().toLowerCase();
+    number  = parts.slice(1).join(':').trim();
+  } else if (/^1Z/i.test(str)) {
+    carrier = 'ups';
+  } else if (/^\d{12,22}$/.test(str) && str.length >= 15) {
+    carrier = 'fedex';
+  } else if (/^9[2345]\d{18,}$/.test(str)) {
+    carrier = 'usps';
+  }
+
+  let url = '';
+  if (carrier.includes('fedex')) url = `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(number)}`;
+  else if (carrier.includes('ups')) url = `https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`;
+  else if (carrier.includes('usps')) url = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`;
+
+  if (url) {
+    return `<a href="${url}" target="_blank" class="tracking-link" title="Track with ${carrier.toUpperCase()}">${number} ↗</a>`;
+  }
+  return `<span class="tracking-plain">${str}</span>`;
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function updateKPIs() {
+  const counts = { Issued:0, 'Partially Received':0, Received:0, Draft:0 };
+  allData.forEach(r => { if (counts[r.Status] !== undefined) counts[r.Status]++; });
+  document.getElementById('kpi-total').textContent    = allData.length;
+  document.getElementById('kpi-issued').textContent   = counts['Issued'];
+  document.getElementById('kpi-partial').textContent  = counts['Partially Received'];
+  document.getElementById('kpi-received').textContent = counts['Received'];
+  document.getElementById('kpi-draft').textContent    = counts['Draft'];
+}
+
+// ── Filter / Toggle ──────────────────────────────────────────────────────────
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn:not(.toggle-received)').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function toggleReceived() {
+  showReceived = !showReceived;
+  const btn = document.getElementById('toggle-received-btn');
+  btn.textContent = showReceived ? 'Hide Received' : 'Show Received';
+  btn.classList.toggle('on', showReceived);
+  renderTable();
+}
+
+// ── Sort ─────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  const idx = ['Number','Date','Vendor','Status','Projects'].indexOf(col);
+  if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add('sorted');
+  renderTable();
+}
+
+// ── Render table ─────────────────────────────────────────────────────────────
+function statusBadge(status) {
+  const map = { 'Issued':'badge-issued','Partially Received':'badge-partial','Received':'badge-received','Draft':'badge-draft','Cancelled':'badge-cancelled' };
+  return `<span class="badge ${map[status]||'badge-draft'}">${status}</span>`;
+}
+
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const hasSearch = search.length > 0;
+
+  let data = allData.filter(r => {
+    const isReceived = r.Status === 'Received';
+    // Always include in search regardless of toggle
+    const matchSearch = !hasSearch || (
+      r.Number.toLowerCase().includes(search) ||
+      r.Vendor.toLowerCase().includes(search) ||
+      r.Projects.toLowerCase().includes(search) ||
+      r.Notes.toLowerCase().includes(search) ||
+      r.VendorRef.toLowerCase().includes(search)
+    );
+    if (!matchSearch) return false;
+    // If searching, show all matches regardless of received toggle
+    if (hasSearch) return true;
+    // Otherwise apply filter + received toggle
+    if (isReceived && !showReceived) return false;
+    if (currentFilter !== 'All' && r.Status !== currentFilter) return false;
+    return true;
+  });
+
+  data.sort((a, b) => {
+    let av = a[sortCol]||'', bv = b[sortCol]||'';
+    if (sortCol === 'Date') { av = new Date(av); bv = new Date(bv); return sortAsc ? av-bv : bv-av; }
+    av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
+    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  const tbody = document.getElementById('po-tbody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div id="empty-state">
+      <div class="empty-icon">${allData.length ? '🔍' : '📋'}</div>
+      <div class="empty-title">${allData.length ? 'No results found' : 'No data loaded yet'}</div>
+      <div class="empty-sub">${allData.length ? 'Try adjusting your filter or search' : 'Drop your D-Tools PO export above to get started'}</div>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((r, i) => `
+    <tr class="fade-in ${r.Status==='Received'?'row-received':''}" style="animation-delay:${Math.min(i*0.02,0.3)}s">
+      <td><span class="po-num">${r.Number}</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.Date}</td>
+      <td><span class="vendor-name">${r.Vendor}</span></td>
+      <td>${statusBadge(r.Status)}</td>
+      <td><span class="project-name">${r.Projects||'<span style="opacity:0.3">—</span>'}</span></td>
+      <td><span class="po-num">${r.VendorRef||'<span style="opacity:0.3">—</span>'}</span></td>
+      <td>${trackingLink(r.Tracking)}</td>
+      <td><span class="notes-text">${r.Notes||''}</span></td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHOWROOM CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════════
+const SHOWROOM_ITEMS = [
+  { id:'foyer',     area:'Foyer',        detail:'TV / Display / Sound Bar' },
+  { id:'showroom',  area:'Showroom',     detail:'Can Lights / Floor Lights / Wall Speakers / Touch Panel' },
+  { id:'fireplace', area:'Fireplace',    detail:'TV / Sound / Control Rack / Shelf Lights' },
+  { id:'island',    area:'Island',       detail:'Lights / Pendant Lights / Control Device' },
+  { id:'couch',     area:'Couch Area',   detail:'Big TV / Thermostat / Ring Camera' },
+  { id:'kitchen',   area:'Kitchenette',  detail:'Wall Lights / TV / Fridge / Lights' },
+  { id:'theater',   area:'Theater Room', detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat' },
+];
+
+let showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
+
+function getWeekLabel() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay()+6)%7));
+  return 'Week of ' + monday.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+}
+
+function toggleChecklistItem(prefix, id) {
+  const list = prefix === 'showroom' ? showroomItems : showroomItems;
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  item.status = item.status==='unchecked' ? 'pass' : item.status==='pass' ? 'fail' : 'unchecked';
+  renderChecklist(prefix);
+}
+
+function resetChecklist(prefix) {
+  showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
+  document.getElementById('showroom-notes').value = '';
+  renderChecklist(prefix);
+}
+
+function renderChecklist(prefix) {
+  document.getElementById('showroom-week').textContent = '· ' + getWeekLabel();
+  const grid = document.getElementById('showroom-grid');
+  grid.innerHTML = showroomItems.map(item => {
+    const s = item.status;
+    const cls   = s==='pass' ? 'pass' : s==='fail' ? 'fail' : 'unknown';
+    const icon  = s==='pass' ? '✓'   : s==='fail' ? '✕'    : '—';
+    const label = s==='pass' ? 'Pass' : s==='fail' ? 'Fail' : 'Tap to check';
+    const lc    = s==='pass' ? '#86efac' : s==='fail' ? '#fca5a5' : '#475569';
+    return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('showroom','${item.id}')" title="Click to toggle">
+      <div class="checklist-dot ${cls}">${icon}</div>
+      <div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div>
+      <div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOGISTICS CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════════
+const LOGISTICS_SECTIONS = [
+  {
+    id: 'fleet',
+    title: 'Fleet',
+    tasks: [
+      { id:'fl1', text:'All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)', monthly: false },
+      { id:'fl2', text:'Service appointments made for any vehicle issues.', monthly: false },
+      { id:'fl3', text:'Inspect vinyl condition and overall exterior presentation of vehicles.', monthly: false },
+      { id:'fl4', text:'Van products, parts, and tools inventoried and adjusted as needed.', monthly: true },
+    ]
+  },
+  {
+    id: 'inventory',
+    title: 'Inventory & Staging',
+    tasks: [
+      { id:'in1', text:"All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.", monthly: false },
+      { id:'in2', text:'Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.', monthly: false },
+      { id:'in3', text:'Process any defective items for RMA return and reorder any necessary replacement parts.', monthly: false },
+      { id:'in4', text:'Organize and clean trash and debris from warehouse.', monthly: false },
+    ]
+  },
+  {
+    id: 'facilities',
+    title: 'Facilities',
+    tasks: [
+      { id:'fa1', text:'Be present at Morning Stand Up.', monthly: false },
+      { id:'fa2', text:'Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.', monthly: false },
+      { id:'fa3', text:'All van keys are accounted for at the start/end of shift.', monthly: false },
+      { id:'fa4', text:'Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.', monthly: false },
+      { id:'fa5', text:'Fire extinguishers and first aid kits checked and restocked when necessary.', monthly: true },
+    ]
+  },
+];
+
+const DAYS = ['M','T','W','T','F'];
+
+// State: { sectionId: { initials, tasks: { taskId: ['unchecked','pass','fail','unchecked','pass'] } } }
+let logisticsState = {};
+
+function initLogisticsState() {
+  logisticsState = {};
+  LOGISTICS_SECTIONS.forEach(sec => {
+    logisticsState[sec.id] = { initials: '' };
+    sec.tasks.forEach(task => {
+      logisticsState[sec.id][task.id] = ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+    });
+  });
+}
+
+function toggleDayCell(secId, taskId, dayIdx) {
+  const cur = logisticsState[secId][taskId][dayIdx];
+  logisticsState[secId][taskId][dayIdx] = cur === 'unchecked' ? 'pass' : cur === 'pass' ? 'fail' : 'unchecked';
+  renderLogistics();
+}
+
+function resetLogistics() {
+  initLogisticsState();
+  document.getElementById('logistics-notes').value = '';
+  renderLogistics();
+}
+
+function renderLogistics() {
+  document.getElementById('logistics-week').textContent = '· ' + getWeekLabel();
+  const wrap = document.getElementById('logistics-wrap');
+  wrap.innerHTML = LOGISTICS_SECTIONS.map(sec => {
+    const state = logisticsState[sec.id] || {};
+    const initials = state.initials || '';
+    const tasksHtml = sec.tasks.map(task => {
+      const days = state[task.id] || ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+      let cellsHtml;
+      if (task.monthly) {
+        const s = days[0];
+        const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
+        const label = s === 'pass' ? '✓ Done' : s === 'fail' ? '✕ Issue' : 'Mark Done';
+        const color = s === 'pass' ? '#86efac' : s === 'fail' ? '#fca5a5' : '#64748b';
+        cellsHtml = `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
+          <span class="day-val" style="font-size:11px;font-weight:600;color:${color}">${label}</span>
+        </div>`;
+      } else {
+        cellsHtml = DAYS.map((d, i) => {
+          const s = days[i];
+          const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
+          const val = s === 'pass' ? '✓' : s === 'fail' ? '✕' : '·';
+          return `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',${i})" title="${['Mon','Tue','Wed','Thu','Fri'][i]}">
+            <span class="day-label">${d}</span>
+            <span class="day-val">${val}</span>
+          </div>`;
+        }).join('');
+      }
+      return `<div class="logistics-row${task.monthly?' monthly':''}">
+        <div class="logistics-task">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div>
+        <div class="day-cells">${cellsHtml}</div>
+      </div>`;
+    }).join('');
+    return `<div class="logistics-section">
+      <div class="logistics-section-header">
+        <span class="logistics-section-title">${sec.title}</span>
+        <div class="logistics-initials">
+          Initials: <input type="text" maxlength="5" value="${initials}" placeholder="JMS" oninput="logisticsState['${sec.id}'].initials=this.value">
+        </div>
+      </div>
+      ${tasksHtml}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INVENTORY CHART
+// ═══════════════════════════════════════════════════════════════════════════════
+let inventoryEntries = []; // { date, inventory, staging }
+let invChart = null;
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('inv-date').value = d.toISOString().split('T')[0];
+  renderChecklist('showroom');
+  initLogisticsState();
+  renderLogistics();
+});
+
+function addInventoryEntry() {
+  const date = document.getElementById('inv-date').value;
+  const inv  = parseFloat(document.getElementById('inv-inventory').value);
+  const stg  = parseFloat(document.getElementById('inv-staging').value);
+  if (!date || isNaN(inv) || isNaN(stg)) {
+    alert('Please fill in date, inventory, and staging values.');
+    return;
+  }
+  inventoryEntries.push({ date, inventory: inv, staging: stg });
+  inventoryEntries.sort((a,b) => a.date.localeCompare(b.date));
+  document.getElementById('inv-inventory').value = '';
+  document.getElementById('inv-staging').value   = '';
+  // Advance date by 7 days for convenience
+  const next = new Date(date);
+  next.setDate(next.getDate() + 7);
+  document.getElementById('inv-date').value = next.toISOString().split('T')[0];
+  renderInventoryChart();
+}
+
+function clearLastEntry() {
+  if (inventoryEntries.length === 0) return;
+  inventoryEntries.pop();
+  renderInventoryChart();
+}
+
+function fmtMoney(n) {
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderInventoryChart() {
+  const area = document.getElementById('chart-area');
+  const totals = document.getElementById('chart-totals');
+
+  if (inventoryEntries.length === 0) {
+    area.innerHTML = '<div class="no-chart-data">No entries yet — add your first inventory total above</div>';
+    totals.innerHTML = '';
+    if (invChart) { invChart.destroy(); invChart = null; }
+    return;
+  }
+
+  const latest = inventoryEntries[inventoryEntries.length - 1];
+  const combined = latest.inventory + latest.staging;
+  totals.innerHTML = `
+    <div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div>
+    <div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div>
+    <div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
+
+  const labels   = inventoryEntries.map(e => { const d = new Date(e.date+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  const invData  = inventoryEntries.map(e => e.inventory);
+  const stgData  = inventoryEntries.map(e => e.staging);
+  const combData = inventoryEntries.map(e => e.inventory + e.staging);
+
+  if (invChart) invChart.destroy();
+  area.innerHTML = '<canvas id="inv-chart"></canvas>';
+  const ctx = document.getElementById('inv-chart').getContext('2d');
+  invChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Inventory',  data: invData,  borderColor:'#93c5fd', backgroundColor:'rgba(147,197,253,0.08)', pointBackgroundColor:'#93c5fd', tension:0.3, pointRadius:4 },
+        { label:'Staging',    data: stgData,  borderColor:'#86efac', backgroundColor:'rgba(134,239,172,0.08)', pointBackgroundColor:'#86efac', tension:0.3, pointRadius:4 },
+        { label:'Combined',   data: combData, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.06)',  pointBackgroundColor:'#fbbf24', tension:0.3, pointRadius:4, borderDash:[4,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color:'#94a3b8', font:{family:'DM Sans',size:12}, boxWidth:12, padding:20 } },
+        tooltip: {
+          backgroundColor:'#1c2333',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          titleColor:'#e2e8f0',
+          bodyColor:'#94a3b8',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.raw)}` }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}} },
+        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}, callback: v => '$'+Math.round(v/1000)+'K'} }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAVE & SHARE
+// ═══════════════════════════════════════════════════════════════════════════════
+function saveSnapshot() {
+  const timestamp = document.getElementById('last-updated').textContent;
+  const showroomNotes = document.getElementById('showroom-notes').value;
+  const logisticsNotes = document.getElementById('logistics-notes').value;
+  const payload = {
+    data: allData,
+    timestamp,
+    showroomItems,
+    showroomNotes,
+    inventoryEntries,
+    logisticsState,
+    logisticsNotes,
+  };
+  const dataScript = `\n<script id="preloaded-data">\n  window.__PRELOADED__ = ${JSON.stringify(payload)};\n<\/script>`;
+  const html = document.documentElement.outerHTML.replace('</head>', dataScript + '</head>');
+  const date = new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).replace(/\//g,'-');
+  const blob = new Blob([html], { type:'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PortCity_Logistics_Dashboard_${date}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Restore snapshot ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.__PRELOADED__) {
+    const p = window.__PRELOADED__;
+    allData = p.data || [];
+    document.getElementById('last-updated').textContent = p.timestamp || '';
+    document.getElementById('loaded-filename').textContent = 'Saved snapshot';
+    document.getElementById('drop-zone').classList.add('has-data');
+    document.getElementById('save-btn').style.display = 'flex';
+    updateKPIs();
+    renderTable();
+    if (p.showroomItems) showroomItems = p.showroomItems;
+    if (p.showroomNotes) document.getElementById('showroom-notes').value = p.showroomNotes;
+    if (p.inventoryEntries) { inventoryEntries = p.inventoryEntries; renderInventoryChart(); }
+    if (p.logisticsState) logisticsState = p.logisticsState;
+    if (p.logisticsNotes) document.getElementById('logistics-notes').value = p.logisticsNotes;
+  }
+  renderChecklist('showroom');
+  initLogisticsState();
+  renderLogistics();
+  if (window.__PRELOADED__ && window.__PRELOADED__.logisticsState) {
+    logisticsState = window.__PRELOADED__.logisticsState;
+    if (window.__PRELOADED__.logisticsNotes) document.getElementById('logistics-notes').value = window.__PRELOADED__.logisticsNotes;
+    renderLogistics();
+  }
+});
+</script>
+
+
+</body></html>
