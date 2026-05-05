@@ -477,7 +477,7 @@ function processFile(file) {
         Date:      formatDate(row['Date']),
         Vendor:    String(row['Vendor']||'').trim(),
         Status:    String(row['Status']||'').trim(),
-        Projects:  cleanProject(String(row['Projects']||'')),
+        Projects:  cleanProject(String(row['Projects']||'')) || cleanProject(String(row['Service Orders']||'')),
         VendorRef: String(row['Vendor Reference Number']||row['Vendor Ref']||'').trim(),
         Tracking:  String(row['Tracking Number']||row['Tracking']||'').trim(),
         Notes:     String(row['Notes']||'').trim(),
