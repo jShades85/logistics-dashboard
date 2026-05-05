@@ -488,4 +488,487 @@ function processFile(file) {
       })).filter(r => {
         if (r.Status !== 'Received') return true;
         const d = new Date(r.Date);
-        return !isNaN(d) && d >=
+        return !isNaN(d) && d >= sixMonthsAgo;
+      });
+      document.getElementById('loaded-filename').textContent = file.name;
+      document.getElementById('drop-zone').classList.add('has-data');
+      const ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      document.getElementById('last-updated').textContent = 'Updated ' + ts;
+      document.getElementById('save-btn').style.display = 'flex';
+      updateKPIs();
+      renderTable();
+    } catch(err) {
+      alert("Could not read file. Make sure it's a D-Tools .xlsx or .csv export.");
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  if (typeof val === 'number') {
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return d.toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
+  }
+  return String(val);
+}
+
+function cleanProject(raw) {
+  if (!raw.trim()) return '';
+  let p = raw;
+  if (p.includes(' : ')) p = p.split(' : ')[1];
+  p = p.replace(/\s*\(PORT\s*-?\s*\d+\)\s*$/i, '').trim();
+  return p;
+}
+
+// ── Tracking link helper ─────────────────────────────────────────────────────
+function trackingLink(raw) {
+  if (!raw) return '<span style="opacity:0.3">—</span>';
+  const str = raw.trim();
+  const lower = str.toLowerCase();
+
+  let carrier = '';
+  let number  = str;
+
+  // Try to split "Carrier: NUMBER" format
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    carrier = parts[0].trim().toLowerCase();
+    number  = parts.slice(1).join(':').trim();
+  } else if (/^1Z/i.test(str)) {
+    carrier = 'ups';
+  } else if (/^\d{12,22}$/.test(str) && str.length >= 15) {
+    carrier = 'fedex';
+  } else if (/^9[2345]\d{18,}$/.test(str)) {
+    carrier = 'usps';
+  }
+
+  let url = '';
+  if (carrier.includes('fedex')) url = `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(number)}`;
+  else if (carrier.includes('ups')) url = `https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`;
+  else if (carrier.includes('usps')) url = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`;
+
+  if (url) {
+    return `<a href="${url}" target="_blank" class="tracking-link" title="Track with ${carrier.toUpperCase()}">${number} ↗</a>`;
+  }
+  return `<span class="tracking-plain">${str}</span>`;
+}
+
+// ── KPIs ─────────────────────────────────────────────────────────────────────
+function updateKPIs() {
+  const counts = { Issued:0, 'Partially Received':0, Received:0, Draft:0 };
+  allData.forEach(r => { if (counts[r.Status] !== undefined) counts[r.Status]++; });
+  document.getElementById('kpi-total').textContent    = allData.length;
+  document.getElementById('kpi-issued').textContent   = counts['Issued'];
+  document.getElementById('kpi-partial').textContent  = counts['Partially Received'];
+  document.getElementById('kpi-received').textContent = counts['Received'];
+  document.getElementById('kpi-draft').textContent    = counts['Draft'];
+}
+
+// ── Filter / Toggle ──────────────────────────────────────────────────────────
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn:not(.toggle-received)').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderTable();
+}
+
+function toggleReceived() {
+  showReceived = !showReceived;
+  const btn = document.getElementById('toggle-received-btn');
+  btn.textContent = showReceived ? 'Hide Received' : 'Show Received';
+  btn.classList.toggle('on', showReceived);
+  renderTable();
+}
+
+// ── Sort ─────────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  const idx = ['Number','Date','Vendor','Status','Projects'].indexOf(col);
+  if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add('sorted');
+  renderTable();
+}
+
+// ── Render table ─────────────────────────────────────────────────────────────
+function statusBadge(status) {
+  const map = { 'Issued':'badge-issued','Partially Received':'badge-partial','Received':'badge-received','Draft':'badge-draft','Cancelled':'badge-cancelled' };
+  return `<span class="badge ${map[status]||'badge-draft'}">${status}</span>`;
+}
+
+function renderTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const hasSearch = search.length > 0;
+
+  let data = allData.filter(r => {
+    const isReceived = r.Status === 'Received';
+    // Always include in search regardless of toggle
+    const matchSearch = !hasSearch || (
+      r.Number.toLowerCase().includes(search) ||
+      r.Vendor.toLowerCase().includes(search) ||
+      r.Projects.toLowerCase().includes(search) ||
+      r.Notes.toLowerCase().includes(search) ||
+      r.VendorRef.toLowerCase().includes(search)
+    );
+    if (!matchSearch) return false;
+    // If searching, show all matches regardless of received toggle
+    if (hasSearch) return true;
+    // Otherwise apply filter + received toggle
+    if (isReceived && !showReceived) return false;
+    if (currentFilter !== 'All' && r.Status !== currentFilter) return false;
+    return true;
+  });
+
+  data.sort((a, b) => {
+    let av = a[sortCol]||'', bv = b[sortCol]||'';
+    if (sortCol === 'Date') { av = new Date(av); bv = new Date(bv); return sortAsc ? av-bv : bv-av; }
+    av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
+    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  const tbody = document.getElementById('po-tbody');
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div id="empty-state">
+      <div class="empty-icon">${allData.length ? '🔍' : '📋'}</div>
+      <div class="empty-title">${allData.length ? 'No results found' : 'No data loaded yet'}</div>
+      <div class="empty-sub">${allData.length ? 'Try adjusting your filter or search' : 'Drop your D-Tools PO export above to get started'}</div>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map((r, i) => `
+    <tr class="fade-in ${r.Status==='Received'?'row-received':''}" style="animation-delay:${Math.min(i*0.02,0.3)}s">
+      <td><span class="po-num">${r.Number}</span></td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.Date}</td>
+      <td><span class="vendor-name">${r.Vendor}</span></td>
+      <td>${statusBadge(r.Status)}</td>
+      <td><span class="project-name">${r.Projects||'<span style="opacity:0.3">—</span>'}</span></td>
+      <td><span class="po-num">${r.VendorRef||'<span style="opacity:0.3">—</span>'}</span></td>
+      <td>${trackingLink(r.Tracking)}</td>
+      <td><span class="notes-text">${r.Notes||''}</span></td>
+    </tr>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SHOWROOM CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════════
+const SHOWROOM_ITEMS = [
+  { id:'foyer',     area:'Foyer',        detail:'TV / Display / Sound Bar' },
+  { id:'showroom',  area:'Showroom',     detail:'Can Lights / Floor Lights / Wall Speakers / Touch Panel' },
+  { id:'fireplace', area:'Fireplace',    detail:'TV / Sound / Control Rack / Shelf Lights' },
+  { id:'island',    area:'Island',       detail:'Lights / Pendant Lights / Control Device' },
+  { id:'couch',     area:'Couch Area',   detail:'Big TV / Thermostat / Ring Camera' },
+  { id:'kitchen',   area:'Kitchenette',  detail:'Wall Lights / TV / Fridge / Lights' },
+  { id:'theater',   area:'Theater Room', detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat' },
+];
+
+let showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
+
+function getWeekLabel() {
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay()+6)%7));
+  return 'Week of ' + monday.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+}
+
+function toggleChecklistItem(prefix, id) {
+  const list = prefix === 'showroom' ? showroomItems : showroomItems;
+  const item = list.find(i => i.id === id);
+  if (!item) return;
+  item.status = item.status==='unchecked' ? 'pass' : item.status==='pass' ? 'fail' : 'unchecked';
+  renderChecklist(prefix);
+}
+
+function resetChecklist(prefix) {
+  showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
+  document.getElementById('showroom-notes').value = '';
+  renderChecklist(prefix);
+}
+
+function renderChecklist(prefix) {
+  document.getElementById('showroom-week').textContent = '· ' + getWeekLabel();
+  const grid = document.getElementById('showroom-grid');
+  grid.innerHTML = showroomItems.map(item => {
+    const s = item.status;
+    const cls   = s==='pass' ? 'pass' : s==='fail' ? 'fail' : 'unknown';
+    const icon  = s==='pass' ? '✓'   : s==='fail' ? '✕'    : '—';
+    const label = s==='pass' ? 'Pass' : s==='fail' ? 'Fail' : 'Tap to check';
+    const lc    = s==='pass' ? '#86efac' : s==='fail' ? '#fca5a5' : '#475569';
+    return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('showroom','${item.id}')" title="Click to toggle">
+      <div class="checklist-dot ${cls}">${icon}</div>
+      <div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div>
+      <div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div>
+    </div>`;
+  }).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOGISTICS CHECKLIST
+// ═══════════════════════════════════════════════════════════════════════════════
+const LOGISTICS_SECTIONS = [
+  {
+    id: 'fleet',
+    title: 'Fleet',
+    tasks: [
+      { id:'fl1', text:'All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)', monthly: false },
+      { id:'fl2', text:'Service appointments made for any vehicle issues.', monthly: false },
+      { id:'fl3', text:'Inspect vinyl condition and overall exterior presentation of vehicles.', monthly: false },
+      { id:'fl4', text:'Van products, parts, and tools inventoried and adjusted as needed.', monthly: true },
+    ]
+  },
+  {
+    id: 'inventory',
+    title: 'Inventory & Staging',
+    tasks: [
+      { id:'in1', text:"All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.", monthly: false },
+      { id:'in2', text:'Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.', monthly: false },
+      { id:'in3', text:'Process any defective items for RMA return and reorder any necessary replacement parts.', monthly: false },
+      { id:'in4', text:'Organize and clean trash and debris from warehouse.', monthly: false },
+    ]
+  },
+  {
+    id: 'facilities',
+    title: 'Facilities',
+    tasks: [
+      { id:'fa1', text:'Be present at Morning Stand Up.', monthly: false },
+      { id:'fa2', text:'Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.', monthly: false },
+      { id:'fa3', text:'All van keys are accounted for at the start/end of shift.', monthly: false },
+      { id:'fa4', text:'Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.', monthly: false },
+      { id:'fa5', text:'Fire extinguishers and first aid kits checked and restocked when necessary.', monthly: true },
+    ]
+  },
+];
+
+const DAYS = ['M','T','W','T','F'];
+
+// State: { sectionId: { initials, tasks: { taskId: ['unchecked','pass','fail','unchecked','pass'] } } }
+let logisticsState = {};
+
+function initLogisticsState() {
+  logisticsState = {};
+  LOGISTICS_SECTIONS.forEach(sec => {
+    logisticsState[sec.id] = { initials: '' };
+    sec.tasks.forEach(task => {
+      logisticsState[sec.id][task.id] = ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+    });
+  });
+}
+
+function toggleDayCell(secId, taskId, dayIdx) {
+  const cur = logisticsState[secId][taskId][dayIdx];
+  logisticsState[secId][taskId][dayIdx] = cur === 'unchecked' ? 'pass' : cur === 'pass' ? 'fail' : 'unchecked';
+  renderLogistics();
+}
+
+function resetLogistics() {
+  initLogisticsState();
+  document.getElementById('logistics-notes').value = '';
+  renderLogistics();
+}
+
+function renderLogistics() {
+  document.getElementById('logistics-week').textContent = '· ' + getWeekLabel();
+  const wrap = document.getElementById('logistics-wrap');
+  wrap.innerHTML = LOGISTICS_SECTIONS.map(sec => {
+    const state = logisticsState[sec.id] || {};
+    const initials = state.initials || '';
+    const tasksHtml = sec.tasks.map(task => {
+      const days = state[task.id] || ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+      let cellsHtml;
+      if (task.monthly) {
+        const s = days[0];
+        const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
+        const label = s === 'pass' ? '✓ Done' : s === 'fail' ? '✕ Issue' : 'Mark Done';
+        const color = s === 'pass' ? '#86efac' : s === 'fail' ? '#fca5a5' : '#64748b';
+        cellsHtml = `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
+          <span class="day-val" style="font-size:11px;font-weight:600;color:${color}">${label}</span>
+        </div>`;
+      } else {
+        cellsHtml = DAYS.map((d, i) => {
+          const s = days[i];
+          const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
+          const val = s === 'pass' ? '✓' : s === 'fail' ? '✕' : '·';
+          return `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',${i})" title="${['Mon','Tue','Wed','Thu','Fri'][i]}">
+            <span class="day-label">${d}</span>
+            <span class="day-val">${val}</span>
+          </div>`;
+        }).join('');
+      }
+      return `<div class="logistics-row${task.monthly?' monthly':''}">
+        <div class="logistics-task">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div>
+        <div class="day-cells">${cellsHtml}</div>
+      </div>`;
+    }).join('');
+    return `<div class="logistics-section">
+      <div class="logistics-section-header">
+        <span class="logistics-section-title">${sec.title}</span>
+        <div class="logistics-initials">
+          Initials: <input type="text" maxlength="5" value="${initials}" placeholder="JMS" oninput="logisticsState['${sec.id}'].initials=this.value">
+        </div>
+      </div>
+      ${tasksHtml}
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INVENTORY CHART
+// ═══════════════════════════════════════════════════════════════════════════════
+let inventoryEntries = []; // { date, inventory, staging }
+let invChart = null;
+
+// Set default date to today
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date();
+  document.getElementById('inv-date').value = d.toISOString().split('T')[0];
+  renderChecklist('showroom');
+  initLogisticsState();
+  renderLogistics();
+});
+
+function addInventoryEntry() {
+  const date = document.getElementById('inv-date').value;
+  const inv  = parseFloat(document.getElementById('inv-inventory').value);
+  const stg  = parseFloat(document.getElementById('inv-staging').value);
+  if (!date || isNaN(inv) || isNaN(stg)) {
+    alert('Please fill in date, inventory, and staging values.');
+    return;
+  }
+  inventoryEntries.push({ date, inventory: inv, staging: stg });
+  inventoryEntries.sort((a,b) => a.date.localeCompare(b.date));
+  document.getElementById('inv-inventory').value = '';
+  document.getElementById('inv-staging').value   = '';
+  // Advance date by 7 days for convenience
+  const next = new Date(date);
+  next.setDate(next.getDate() + 7);
+  document.getElementById('inv-date').value = next.toISOString().split('T')[0];
+  renderInventoryChart();
+}
+
+function clearLastEntry() {
+  if (inventoryEntries.length === 0) return;
+  inventoryEntries.pop();
+  renderInventoryChart();
+}
+
+function fmtMoney(n) {
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function renderInventoryChart() {
+  const area = document.getElementById('chart-area');
+  const totals = document.getElementById('chart-totals');
+
+  if (inventoryEntries.length === 0) {
+    area.innerHTML = '<div class="no-chart-data">No entries yet — add your first inventory total above</div>';
+    totals.innerHTML = '';
+    if (invChart) { invChart.destroy(); invChart = null; }
+    return;
+  }
+
+  const latest = inventoryEntries[inventoryEntries.length - 1];
+  const combined = latest.inventory + latest.staging;
+  totals.innerHTML = `
+    <div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div>
+    <div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div>
+    <div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
+
+  const labels   = inventoryEntries.map(e => { const d = new Date(e.date+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
+  const invData  = inventoryEntries.map(e => e.inventory);
+  const stgData  = inventoryEntries.map(e => e.staging);
+  const combData = inventoryEntries.map(e => e.inventory + e.staging);
+
+  if (invChart) invChart.destroy();
+  area.innerHTML = '<canvas id="inv-chart"></canvas>';
+  const ctx = document.getElementById('inv-chart').getContext('2d');
+  invChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Inventory',  data: invData,  borderColor:'#93c5fd', backgroundColor:'rgba(147,197,253,0.08)', pointBackgroundColor:'#93c5fd', tension:0.3, pointRadius:4 },
+        { label:'Staging',    data: stgData,  borderColor:'#86efac', backgroundColor:'rgba(134,239,172,0.08)', pointBackgroundColor:'#86efac', tension:0.3, pointRadius:4 },
+        { label:'Combined',   data: combData, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.06)',  pointBackgroundColor:'#fbbf24', tension:0.3, pointRadius:4, borderDash:[4,3] },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color:'#94a3b8', font:{family:'DM Sans',size:12}, boxWidth:12, padding:20 } },
+        tooltip: {
+          backgroundColor:'#1c2333',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          titleColor:'#e2e8f0',
+          bodyColor:'#94a3b8',
+          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.raw)}` }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}} },
+        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}, callback: v => '$'+Math.round(v/1000)+'K'} }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAVE & SHARE
+// ═══════════════════════════════════════════════════════════════════════════════
+function saveSnapshot() {
+  const timestamp = document.getElementById('last-updated').textContent;
+  const showroomNotes = document.getElementById('showroom-notes').value;
+  const logisticsNotes = document.getElementById('logistics-notes').value;
+  const payload = {
+    data: allData,
+    timestamp,
+    showroomItems,
+    showroomNotes,
+    inventoryEntries,
+    logisticsState,
+    logisticsNotes,
+  };
+  const dataScript = `\n<script id="preloaded-data">\n  window.__PRELOADED__ = ${JSON.stringify(payload)};\n<\/script>`;
+  const html = document.documentElement.outerHTML.replace('</head>', dataScript + '</head>');
+  const date = new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).replace(/\//g,'-');
+  const blob = new Blob([html], { type:'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `PortCity_Logistics_Dashboard_${date}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Restore snapshot ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.__PRELOADED__) {
+    const p = window.__PRELOADED__;
+    allData = p.data || [];
+    document.getElementById('last-updated').textContent = p.timestamp || '';
+    document.getElementById('loaded-filename').textContent = 'Saved snapshot';
+    document.getElementById('drop-zone').classList.add('has-data');
+    document.getElementById('save-btn').style.display = 'flex';
+    updateKPIs();
+    renderTable();
+    if (p.showroomItems) showroomItems = p.showroomItems;
+    if (p.showroomNotes) document.getElementById('showroom-notes').value = p.showroomNotes;
+    if (p.inventoryEntries) { inventoryEntries = p.inventoryEntries; renderInventoryChart(); }
+    if (p.logisticsState) logisticsState = p.logisticsState;
+    if (p.logisticsNotes) document.getElementById('logistics-notes').value = p.logisticsNotes;
+  }
+  renderChecklist('showroom');
+  initLogisticsState();
+  renderLogistics();
+  if (window.__PRELOADED__ && window.__PRELOADED__.logisticsState) {
+    logisticsState = window.__PRELOADED__.logisticsState;
+    if (window.__PRELOADED__.logisticsNotes) document.getElementById('logistics-notes').value = window.__PRELOADED__.logisticsNotes;
+    renderLogistics();
+  }
+});
+</script>
+</body>
+</html>
