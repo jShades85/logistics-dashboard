@@ -1,305 +1,237 @@
-<html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Port City Sound &amp; Security — Logistics Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=Syne:wght@600;700;800&amp;family=DM+Sans:wght@300;400;500&amp;display=swap" rel="stylesheet">
+<title>Port City Sound & Security — Logistics Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg:        #0e1117;
-    --bg2:       #151a24;
-    --bg3:       #1c2333;
-    --border:    rgba(255,255,255,0.07);
-    --border2:   rgba(255,255,255,0.12);
-    --text:      #e2e8f0;
-    --muted:     #64748b;
-    --accent:    #3b82f6;
-    --accent2:   #1d4ed8;
-    --issued-bg:   #1e3a5f; --issued-fg:   #93c5fd;
-    --partial-bg:  #422006; --partial-fg:  #fbbf24;
-    --received-bg: #14532d; --received-fg: #86efac;
-    --draft-bg:    #1e293b; --draft-fg:    #94a3b8;
+    --bg:#0e1117; --bg2:#151a24; --bg3:#1c2333;
+    --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.12);
+    --text:#e2e8f0; --muted:#64748b; --accent:#3b82f6; --accent2:#1d4ed8;
+    --issued-bg:#1e3a5f; --issued-fg:#93c5fd;
+    --partial-bg:#422006; --partial-fg:#fbbf24;
+    --received-bg:#14532d; --received-fg:#86efac;
+    --draft-bg:#1e293b; --draft-fg:#94a3b8;
     --cancelled-bg:#450a0a; --cancelled-fg:#fca5a5;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; min-height: 100vh; line-height: 1.5; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; min-height:100vh; line-height:1.5; }
 
-  /* ── Header ── */
-  header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .logo-mark { width: 36px; height: 36px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: white; flex-shrink: 0; }
-  .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); letter-spacing: -0.3px; }
-  .logo-sub { font-size: 11px; color: var(--muted); font-weight: 400; letter-spacing: 0.5px; text-transform: uppercase; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  #last-updated { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-  .btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.15s, transform 0.1s; display: flex; align-items: center; gap: 6px; }
-  .btn:hover { background: var(--accent2); transform: translateY(-1px); }
-  .btn:active { transform: translateY(0); }
+  /* Header */
+  header { background:var(--bg2); border-bottom:1px solid var(--border); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:64px; position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:12px; }
+  .logo-sub { font-size:11px; color:var(--muted); font-weight:400; letter-spacing:0.5px; text-transform:uppercase; }
+  .header-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  #last-updated { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
+  #sync-status { font-size:11px; font-family:'DM Mono',monospace; padding:4px 10px; border-radius:20px; background:var(--bg3); border:1px solid var(--border); }
+  #sync-status.synced  { color:#86efac; border-color:#14532d; }
+  #sync-status.saving  { color:#fbbf24; border-color:#422006; }
+  #sync-status.error   { color:#fca5a5; border-color:#450a0a; }
+  .btn { background:var(--accent); color:white; border:none; border-radius:8px; padding:8px 16px; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:500; cursor:pointer; transition:background 0.15s,transform 0.1s; display:flex; align-items:center; gap:6px; }
+  .btn:hover { background:var(--accent2); transform:translateY(-1px); }
 
-  /* ── Main ── */
-  main { max-width: 1400px; margin: 0 auto; padding: 28px 32px; }
+  /* Main */
+  main { max-width:1400px; margin:0 auto; padding:28px 32px; }
 
-  /* ── Drop zone ── */
-  #drop-zone { border: 2px dashed var(--border2); border-radius: 14px; padding: 28px; text-align: center; margin-bottom: 28px; transition: all 0.2s; background: var(--bg2); cursor: pointer; position: relative; }
-  #drop-zone.drag-over { border-color: var(--accent); background: rgba(59,130,246,0.08); }
-  #drop-zone.has-data { padding: 14px 28px; border-style: solid; border-color: var(--border); }
-  #drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .drop-icon { font-size: 28px; margin-bottom: 8px; }
-  .drop-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 4px; }
-  .drop-sub { font-size: 12px; color: var(--muted); }
-  .drop-compact { display: none; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
-  #drop-zone.has-data .drop-icon, #drop-zone.has-data .drop-title, #drop-zone.has-data .drop-sub { display: none; }
-  #drop-zone.has-data .drop-compact { display: flex; justify-content: center; }
+  /* Drop zone */
+  #drop-zone { border:2px dashed var(--border2); border-radius:14px; padding:28px; text-align:center; margin-bottom:28px; transition:all 0.2s; background:var(--bg2); cursor:pointer; position:relative; }
+  #drop-zone.drag-over { border-color:var(--accent); background:rgba(59,130,246,0.08); }
+  #drop-zone.has-data { padding:14px 28px; border-style:solid; border-color:var(--border); }
+  #drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .drop-icon { font-size:28px; margin-bottom:8px; }
+  .drop-title { font-family:'Syne',sans-serif; font-weight:700; font-size:15px; color:var(--text); margin-bottom:4px; }
+  .drop-sub { font-size:12px; color:var(--muted); }
+  .drop-compact { display:none; align-items:center; gap:10px; font-size:12px; color:var(--muted); }
+  #drop-zone.has-data .drop-icon, #drop-zone.has-data .drop-title, #drop-zone.has-data .drop-sub { display:none; }
+  #drop-zone.has-data .drop-compact { display:flex; justify-content:center; }
 
-  /* ── KPIs ── */
-  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 28px; }
-  .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; transition: border-color 0.2s; display: flex; flex-direction: column; justify-content: center; }
-  .kpi:hover { border-color: var(--border2); }
-  .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; margin-bottom: 6px; }
-  .kpi-value { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; line-height: 1; color: var(--text); }
-  .kpi-value.blue   { color: #93c5fd; }
-  .kpi-value.yellow { color: #fbbf24; }
-  .kpi-value.green  { color: #86efac; }
-  .kpi-value.gray   { color: #94a3b8; }
+  /* KPIs */
+  .kpis { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:28px; }
+  .kpi { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; justify-content:center; }
+  .kpi-label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:500; margin-bottom:6px; }
+  .kpi-value { font-family:'DM Mono',monospace; font-size:24px; font-weight:500; line-height:1; color:var(--text); }
+  .kpi-value.blue{color:#93c5fd} .kpi-value.yellow{color:#fbbf24} .kpi-value.green{color:#86efac} .kpi-value.gray{color:#94a3b8}
 
-  /* ── Filter bar ── */
-  .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
-  .filter-label { font-size: 12px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-  .filter-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 12px; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
-  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
-  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
-  .filter-btn.toggle-received { border-color: var(--received-bg); color: #86efac; }
-  .filter-btn.toggle-received.on { background: #14532d; border-color: #16a34a; color: #86efac; }
-  .search-wrap { margin-left: auto; position: relative; }
-  .search-wrap input { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px 7px 32px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; width: 220px; outline: none; transition: border-color 0.15s; }
-  .search-wrap input:focus { border-color: var(--accent); }
-  .search-wrap input::placeholder { color: var(--muted); }
-  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+  /* Filter bar */
+  .filter-bar { display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+  .filter-label { font-size:12px; color:var(--muted); font-weight:500; text-transform:uppercase; letter-spacing:0.5px; }
+  .filter-btn { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:5px 14px; font-size:12px; color:var(--muted); cursor:pointer; transition:all 0.15s; font-family:'DM Sans',sans-serif; }
+  .filter-btn:hover { border-color:var(--border2); color:var(--text); }
+  .filter-btn.active { background:var(--accent); border-color:var(--accent); color:white; }
+  .filter-btn.toggle-received { border-color:var(--received-bg); color:#86efac; }
+  .filter-btn.toggle-received.on { background:#14532d; border-color:#16a34a; color:#86efac; }
+  .search-wrap { margin-left:auto; position:relative; }
+  .search-wrap input { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:7px 12px 7px 32px; font-size:13px; color:var(--text); font-family:'DM Sans',sans-serif; width:220px; outline:none; transition:border-color 0.15s; }
+  .search-wrap input:focus { border-color:var(--accent); }
+  .search-wrap input::placeholder { color:var(--muted); }
+  .search-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none; }
 
-  /* ── Table ── */
-  .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { padding: 12px 16px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; background: var(--bg3); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
-  thead th:hover { color: var(--text); }
-  thead th .sort-arrow { opacity: 0.4; margin-left: 4px; }
-  thead th.sorted .sort-arrow { opacity: 1; color: var(--accent); }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: rgba(255,255,255,0.025); }
-  tbody tr.row-received { opacity: 0.5; }
-  tbody td { padding: 12px 16px; font-size: 13px; color: var(--text); vertical-align: middle; }
-  .po-num { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--muted); white-space: nowrap; }
-  .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; letter-spacing: 0.3px; }
-  .badge-issued    { background: var(--issued-bg);    color: var(--issued-fg); }
-  .badge-partial   { background: var(--partial-bg);   color: var(--partial-fg); }
-  .badge-received  { background: var(--received-bg);  color: var(--received-fg); }
-  .badge-draft     { background: var(--draft-bg);     color: var(--draft-fg); }
-  .badge-cancelled { background: var(--cancelled-bg); color: var(--cancelled-fg); }
-  .vendor-name { font-weight: 500; }
-  .project-name { color: #94a3b8; font-size: 12px; }
-  .tracking-link { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; text-decoration: none; transition: border-color 0.15s; }
-  .tracking-link:hover { border-color: var(--accent); }
-  .tracking-plain { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; }
-  .notes-text { color: var(--muted); font-size: 12px; font-style: italic; }
+  /* Table */
+  .table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  thead th { padding:12px 16px; text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:500; background:var(--bg3); border-bottom:1px solid var(--border); white-space:nowrap; cursor:pointer; user-select:none; }
+  thead th:hover { color:var(--text); }
+  thead th .sort-arrow { opacity:0.4; margin-left:4px; }
+  thead th.sorted .sort-arrow { opacity:1; color:var(--accent); }
+  tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:rgba(255,255,255,0.025); }
+  tbody tr.row-received { opacity:0.5; }
+  tbody td { padding:12px 16px; font-size:13px; color:var(--text); vertical-align:middle; }
+  .po-num { font-family:'DM Mono',monospace; font-size:12px; color:var(--muted); white-space:nowrap; }
+  .badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; white-space:nowrap; }
+  .badge-issued{background:var(--issued-bg);color:var(--issued-fg)} .badge-partial{background:var(--partial-bg);color:var(--partial-fg)}
+  .badge-received{background:var(--received-bg);color:var(--received-fg)} .badge-draft{background:var(--draft-bg);color:var(--draft-fg)}
+  .badge-cancelled{background:var(--cancelled-bg);color:var(--cancelled-fg)}
+  .vendor-name { font-weight:500; }
+  .project-name { color:#94a3b8; font-size:12px; }
+  .tracking-link { font-family:'DM Mono',monospace; font-size:11px; color:var(--accent); background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:2px 6px; text-decoration:none; }
+  .tracking-link:hover { border-color:var(--accent); }
+  .tracking-plain { font-family:'DM Mono',monospace; font-size:11px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:2px 6px; }
+  .notes-text { color:var(--muted); font-size:12px; font-style:italic; }
+  #empty-state { text-align:center; padding:80px 32px; }
+  .empty-icon { font-size:48px; margin-bottom:16px; opacity:0.5; }
+  .empty-title { font-family:'Syne',sans-serif; font-size:18px; font-weight:700; color:var(--muted); margin-bottom:8px; }
+  .empty-sub { font-size:13px; color:var(--muted); opacity:0.7; }
 
-  /* ── Empty state ── */
-  #empty-state { text-align: center; padding: 80px 32px; }
-  .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
-  .empty-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
-  .empty-sub { font-size: 13px; color: var(--muted); opacity: 0.7; }
+  /* Section headers */
+  .section-header { display:flex; align-items:center; justify-content:space-between; margin:36px 0 14px; }
+  .section-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; color:var(--text); display:flex; align-items:center; gap:8px; }
+  .ghost-btn { background:transparent; border:1px solid var(--border); color:var(--muted); font-size:12px; padding:6px 12px; border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+  .ghost-btn:hover { border-color:var(--border2); color:var(--text); }
 
-  /* ── Section headers ── */
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin: 36px 0 14px; }
-  .section-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .ghost-btn { background: transparent; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
-  .ghost-btn:hover { border-color: var(--border2); color: var(--text); }
+  /* Checklists */
+  .checklist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:10px; margin-bottom:16px; }
+  .checklist-item { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:13px 16px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:opacity 0.15s; }
+  .checklist-item:hover { opacity:0.85; }
+  .checklist-item.pass{border-left:3px solid #16a34a} .checklist-item.fail{border-left:3px solid #dc2626} .checklist-item.unknown{border-left:3px solid #334155}
+  .checklist-dot { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .checklist-dot.pass{background:#14532d} .checklist-dot.fail{background:#450a0a} .checklist-dot.unknown{background:#1e293b}
+  .checklist-name { font-size:13px; font-weight:500; color:var(--text); line-height:1.3; }
+  .checklist-sub { font-size:11px; color:var(--muted); margin-top:2px; }
 
-  /* ── Checklist grid ── */
-  .checklist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; margin-bottom: 16px; }
-  .checklist-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: opacity 0.15s; }
-  .checklist-item:hover { opacity: 0.85; }
-  .checklist-item.pass    { border-left: 3px solid #16a34a; }
-  .checklist-item.fail    { border-left: 3px solid #dc2626; }
-  .checklist-item.unknown { border-left: 3px solid #334155; }
-  .checklist-dot { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-  .checklist-dot.pass    { background: #14532d; }
-  .checklist-dot.fail    { background: #450a0a; }
-  .checklist-dot.unknown { background: #1e293b; }
-  .checklist-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; }
-  .checklist-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  /* Notes box */
+  .notes-box { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:28px; }
+  .notes-box label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:500; display:block; margin-bottom:8px; }
+  .notes-box textarea { width:100%; background:transparent; border:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:13px; resize:vertical; outline:none; min-height:70px; line-height:1.6; }
+  .notes-box textarea::placeholder { color:var(--muted); opacity:0.6; }
 
-  /* ── Notes box ── */
-  .notes-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; margin-bottom: 28px; }
-  .notes-box label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 8px; }
-  .notes-box textarea { width: 100%; background: transparent; border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: vertical; outline: none; min-height: 70px; line-height: 1.6; }
-  .notes-box textarea::placeholder { color: var(--muted); opacity: 0.6; }
+  /* Logistics checklist */
+  .logistics-section { background:var(--bg2); border:1px solid var(--border); border-radius:12px; margin-bottom:14px; overflow:hidden; }
+  .logistics-section-header { padding:12px 16px; background:var(--bg3); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .logistics-section-title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); }
+  .logistics-initials { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; display:flex; align-items:center; gap:8px; }
+  .logistics-initials input { background:var(--bg2); border:1px solid var(--border); border-radius:4px; padding:2px 8px; color:var(--text); font-family:'DM Mono',monospace; font-size:11px; width:70px; outline:none; }
+  .logistics-row { display:flex; align-items:center; padding:10px 16px; border-bottom:1px solid var(--border); gap:12px; }
+  .logistics-row:last-child { border-bottom:none; }
+  .logistics-task { flex:1; font-size:12px; color:var(--text); line-height:1.4; }
+  .logistics-task .monthly-tag { font-size:10px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:1px 6px; margin-left:6px; }
+  .day-cells { display:flex; gap:4px; flex-shrink:0; }
+  .day-cell { width:36px; height:30px; border-radius:6px; border:1px solid var(--border); background:var(--bg3); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.15s; flex-direction:column; }
+  .day-cell .day-label { font-size:8px; color:var(--muted); font-weight:500; letter-spacing:0.5px; line-height:1; margin-bottom:2px; }
+  .day-cell .day-val { font-size:12px; line-height:1; }
+  .day-cell:hover { border-color:var(--border2); }
+  .day-cell.pass{background:#14532d;border-color:#16a34a} .day-cell.pass .day-val{color:#86efac}
+  .day-cell.fail{background:#450a0a;border-color:#dc2626} .day-cell.fail .day-val{color:#fca5a5}
+  .day-cell.unknown .day-val{color:var(--muted)}
 
-  /* ── Inventory Chart ── */
-  .chart-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 28px; }
-  .chart-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
-  .chart-field { display: flex; flex-direction: column; gap: 4px; }
-  .chart-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; }
-  .chart-field input { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Mono', monospace; width: 160px; outline: none; transition: border-color 0.15s; }
-  .chart-field input:focus { border-color: var(--accent); }
-  .chart-field input[type="date"] { width: 150px; color-scheme: dark; }
-  .add-entry-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; align-self: flex-end; transition: background 0.15s; }
-  .add-entry-btn:hover { background: var(--accent2); }
-  .chart-totals { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
-  .chart-total { font-size: 12px; color: var(--muted); }
-  .chart-total span { font-family: 'DM Mono', monospace; font-weight: 500; }
-  .chart-total span.inv  { color: #93c5fd; }
-  .chart-total span.stg  { color: #86efac; }
-  .chart-total span.comb { color: #fbbf24; }
-  canvas#inv-chart { max-height: 260px; }
-  .no-chart-data { text-align: center; padding: 60px; color: var(--muted); font-size: 13px; }
+  /* Inventory chart */
+  .chart-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px; }
+  .chart-controls { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px; }
+  .chart-field { display:flex; flex-direction:column; gap:4px; }
+  .chart-field label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:500; }
+  .chart-field input { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:13px; color:var(--text); font-family:'DM Mono',monospace; width:160px; outline:none; transition:border-color 0.15s; }
+  .chart-field input:focus { border-color:var(--accent); }
+  .chart-field input[type="date"] { width:150px; color-scheme:dark; }
+  .add-entry-btn { background:var(--accent); color:white; border:none; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; align-self:flex-end; transition:background 0.15s; }
+  .add-entry-btn:hover { background:var(--accent2); }
+  .chart-totals { display:flex; gap:24px; margin-bottom:16px; flex-wrap:wrap; }
+  .chart-total { font-size:12px; color:var(--muted); }
+  .chart-total span.inv{color:#93c5fd} .chart-total span.stg{color:#86efac} .chart-total span.comb{color:#fbbf24}
+  canvas#inv-chart { max-height:260px; }
+  .no-chart-data { text-align:center; padding:60px; color:var(--muted); font-size:13px; }
 
-  /* ── Animations ── */
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  .fade-in { animation: fadeIn 0.3s ease forwards; }
-  tr.fade-in { animation: fadeIn 0.25s ease forwards; }
+  /* RMA */
+  .rma-form { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .rma-field { display:flex; flex-direction:column; gap:4px; }
+  .rma-field label { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); font-weight:500; }
+  .rma-field input, .rma-field select { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:13px; color:var(--text); font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.15s; }
+  .rma-field input:focus, .rma-field select:focus { border-color:var(--accent); }
+  .rma-field input::placeholder { color:var(--muted); }
+  .rma-field select option { background:var(--bg3); }
+  .rma-field.wide input { width:200px; }
+  .rma-field.narrow input { width:130px; }
+  .rma-field.date input { width:145px; color-scheme:dark; }
+  .rma-field.status select { width:160px; }
+  .rma-add-btn { background:var(--accent); color:white; border:none; border-radius:8px; padding:8px 16px; font-size:13px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background 0.15s; align-self:flex-end; white-space:nowrap; }
+  .rma-add-btn:hover { background:var(--accent2); }
+  .rma-empty { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+  .rma-count { font-size:11px; color:var(--muted); font-family:'DM Mono',monospace; }
 
+  /* Animations */
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation:fadeIn 0.3s ease forwards; }
+  tr.fade-in { animation:fadeIn 0.25s ease forwards; }
 
-  /* ── Logistics Checklist Table ── */
-  .logistics-section { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
-  .logistics-section-header { padding: 12px 16px; background: var(--bg3); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .logistics-section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); }
-  .logistics-initials { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; display: flex; align-items: center; gap: 8px; }
-  .logistics-initials input { background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; color: var(--text); font-family: 'DM Mono', monospace; font-size: 11px; width: 70px; outline: none; }
-  .logistics-row { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--border); gap: 12px; }
-  .logistics-row:last-child { border-bottom: none; }
-  .logistics-row.monthly { opacity: 0.6; }
-  .logistics-task { flex: 1; font-size: 12px; color: var(--text); line-height: 1.4; }
-  .logistics-task .monthly-tag { font-size: 10px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
-  .day-cells { display: flex; gap: 4px; flex-shrink: 0; }
-  .day-cell { width: 36px; height: 30px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg3); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; flex-direction: column; gap: 0; }
-  .day-cell .day-label { font-size: 8px; color: var(--muted); font-weight: 500; letter-spacing: 0.5px; line-height: 1; margin-bottom: 2px; }
-  .day-cell .day-val { font-size: 12px; line-height: 1; }
-  .day-cell:hover { border-color: var(--border2); }
-  .day-cell.pass { background: #14532d; border-color: #16a34a; }
-  .day-cell.pass .day-val { color: #86efac; }
-  .day-cell.fail { background: #450a0a; border-color: #dc2626; }
-  .day-cell.fail .day-val { color: #fca5a5; }
-  .day-cell.unknown .day-val { color: var(--muted); }
+  /* Footer */
+  footer { text-align:center; padding:24px; font-size:11px; color:var(--muted); opacity:0.5; }
 
-
-  /* ── RMA Tracker ── */
-  .rma-form { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 20px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-  .rma-field { display: flex; flex-direction: column; gap: 4px; }
-  .rma-field label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); font-weight: 500; }
-  .rma-field input, .rma-field select { background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s; }
-  .rma-field input:focus, .rma-field select:focus { border-color: var(--accent); }
-  .rma-field input::placeholder { color: var(--muted); }
-  .rma-field select option { background: var(--bg3); }
-  .rma-field.wide input { width: 220px; }
-  .rma-field.narrow input { width: 130px; }
-  .rma-field.date input { width: 145px; color-scheme: dark; }
-  .rma-field.status select { width: 160px; }
-  .rma-add-btn { background: var(--accent); color: white; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; align-self: flex-end; white-space: nowrap; }
-  .rma-add-btn:hover { background: var(--accent2); }
-  .rma-empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
-  .rma-count { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; }
-
-  /* RMA status badges */
-  .badge-rma-submitted  { background: #1e3a5f; color: #93c5fd; }
-  .badge-rma-pending    { background: #422006; color: #fbbf24; }
-  .badge-rma-ordered    { background: #3b1f6e; color: #c4b5fd; }
-  .badge-rma-resolved   { background: #14532d; color: #86efac; }
-
-  
-
-  /* ── Footer ── */
-  footer { text-align: center; padding: 24px; font-size: 11px; color: var(--muted); opacity: 0.5; }
-
-  /* ── Mobile Responsive ── */
-  
-
-  /* ── Mobile Responsive ── */
-  
-
-  @media (max-width: 768px) {
-    main { padding: 16px; }
-
-    /* Header */
-    header { padding: 10px 16px; height: auto; min-height: 56px; flex-wrap: wrap; gap: 8px; }
-    .logo-sub { font-size: 10px; }
-    .header-right { gap: 8px; flex-wrap: wrap; }
-    #last-updated { font-size: 10px; width: 100%; text-align: right; }
-    .btn { font-size: 11px; padding: 6px 10px; }
-
-    /* KPI cards */
-    .kpis { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    .kpi { padding: 12px 14px; }
-    .kpi-value { font-size: 20px; }
-    .kpi-label { font-size: 10px; }
-
-    /* Filter bar */
-    .filter-bar { gap: 8px; }
-    .filter-btn { font-size: 11px; padding: 4px 10px; }
-    .search-wrap { margin-left: 0; width: 100%; }
-    .search-wrap input { width: 100%; }
-
-    /* PO Table */
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    #po-table thead th:nth-child(6),
-    #po-table thead th:nth-child(7),
-    #po-table thead th:nth-child(8),
-    #po-table tbody td:nth-child(6),
-    #po-table tbody td:nth-child(7),
-    #po-table tbody td:nth-child(8) { display: none; }
-    tbody td { padding: 10px; font-size: 12px; }
-    thead th { padding: 10px; }
-
-    /* RMA table — hide RMA# (col4) and Date (col5), show everything else */
-    #rma-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    #rma-wrap table { min-width: 480px; }
-    #rma-wrap thead th:nth-child(4),
-    #rma-wrap thead th:nth-child(5),
-    #rma-wrap tbody td:nth-child(4),
-    #rma-wrap tbody td:nth-child(5) { display: none !important; }
-    #rma-wrap td:nth-child(3) { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    #rma-wrap td:nth-child(6) select { font-size: 10px; padding: 2px 4px; }
-    #rma-wrap td:nth-child(7) input { min-width: 80px; }
-
-    /* Checklists */
-    .checklist-grid { grid-template-columns: 1fr; }
-    .checklist-item { padding: 10px 12px; }
-    .logistics-row { flex-wrap: wrap; gap: 8px; padding: 10px 12px; }
-    .logistics-task { width: 100%; }
-    .day-cells { justify-content: flex-start; }
-    .day-cell { width: 32px; height: 28px; }
-
-    /* Chart */
-    .chart-controls { flex-direction: column; gap: 8px; }
-    .chart-field input, .chart-field { width: 100%; }
-    .add-entry-btn, .ghost-btn { width: 100%; text-align: center; }
-    .chart-totals { flex-direction: column; gap: 8px; }
-
-    /* RMA form */
-    .rma-form { flex-direction: column; }
-    .rma-field.wide input, .rma-field.narrow input, .rma-field.date input, .rma-field.status select { width: 100%; }
-    .rma-add-btn { width: 100%; }
-
-    /* Section headers */
-    .section-header { flex-wrap: wrap; gap: 8px; }
+  /* Mobile */
+  @media (max-width:768px) {
+    main { padding:16px; }
+    header { padding:10px 16px; height:auto; min-height:56px; flex-wrap:wrap; gap:8px; }
+    .logo-sub { font-size:10px; }
+    .header-right { gap:8px; flex-wrap:wrap; }
+    #last-updated { font-size:10px; }
+    .btn { font-size:11px; padding:6px 10px; }
+    .kpis { grid-template-columns:repeat(2,1fr); gap:10px; }
+    .kpi { padding:12px 14px; }
+    .kpi-value { font-size:20px; }
+    .kpi-label { font-size:10px; }
+    .filter-bar { gap:8px; }
+    .filter-btn { font-size:11px; padding:4px 10px; }
+    .search-wrap { margin-left:0; width:100%; }
+    .search-wrap input { width:100%; }
+    .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    #po-table thead th:nth-child(6), #po-table thead th:nth-child(7), #po-table thead th:nth-child(8),
+    #po-table tbody td:nth-child(6), #po-table tbody td:nth-child(7), #po-table tbody td:nth-child(8) { display:none; }
+    tbody td { padding:10px; font-size:12px; }
+    thead th { padding:10px; }
+    #rma-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+    #rma-wrap table { min-width:480px; }
+    #rma-wrap thead th:nth-child(4), #rma-wrap thead th:nth-child(5),
+    #rma-wrap tbody td:nth-child(4), #rma-wrap tbody td:nth-child(5) { display:none !important; }
+    #rma-wrap td:nth-child(3) { max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .checklist-grid { grid-template-columns:1fr; }
+    .logistics-row { flex-wrap:wrap; gap:8px; padding:10px 12px; }
+    .logistics-task { width:100%; }
+    .day-cells { justify-content:flex-start; }
+    .day-cell { width:32px; height:28px; }
+    .chart-controls { flex-direction:column; gap:8px; }
+    .chart-field input, .chart-field { width:100%; }
+    .add-entry-btn, .ghost-btn { width:100%; text-align:center; }
+    .chart-totals { flex-direction:column; gap:8px; }
+    .rma-form { flex-direction:column; }
+    .rma-field.wide input, .rma-field.narrow input, .rma-field.date input, .rma-field.status select { width:100%; }
+    .rma-add-btn { width:100%; }
+    .section-header { flex-wrap:wrap; gap:8px; }
   }
 </style>
-
-<script id="preloaded-data">
-  window.__PRELOADED__ = {"data":[{"Number":"13878","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"WiFi Upfit","VendorRef":"","Tracking":"","Notes":""},{"Number":"13877","Date":"5/3/2026","Vendor":"BAYSIDE ELECTRIC SUPPLY CO., INC.","Status":"Issued","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13876","Date":"5/3/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Issued","Projects":"","VendorRef":"908431","Tracking":"","Notes":"Stock"},{"Number":"13875","Date":"5/3/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117289","Tracking":"","Notes":"Lanzi"},{"Number":"13874","Date":"5/3/2026","Vendor":"ADI","Status":"Issued","Projects":"","VendorRef":"15404970","Tracking":"","Notes":"for J&S per Jeff"},{"Number":"13873","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Issued","Projects":"","VendorRef":"9117847","Tracking":"FedEX: 518144248431","Notes":""},{"Number":"13872","Date":"4/29/2026","Vendor":"WESCO/ANIXTER","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"Web Order Number 21000225540","Tracking":"","Notes":""},{"Number":"13871","Date":"4/29/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"Replacement Speaker Grilles","VendorRef":"3106319","Tracking":"FedEX: 518144241172","Notes":""},{"Number":"13870","Date":"4/28/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"","VendorRef":"907757","Tracking":"UPS: 1Z2290910368963075","Notes":"Stock"},{"Number":"13869","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13868","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"","Tracking":"","Notes":""},{"Number":"13867","Date":"4/27/2026","Vendor":"ADI","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"15308089","Tracking":"","Notes":""},{"Number":"13866","Date":"4/27/2026","Vendor":"SONANCE","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"3030149999","Tracking":"UPS: 1Z97Y6030358594474","Notes":""},{"Number":"13865","Date":"4/27/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"Mike Elder Residence","VendorRef":"82378893","Tracking":"FedEX: 380883718667","Notes":""},{"Number":"13864","Date":"4/27/2026","Vendor":"ADI","Status":"Partially Received","Projects":"CAT6A Drops","VendorRef":"15306521","Tracking":"","Notes":""},{"Number":"13863","Date":"4/26/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Audio","VendorRef":"07491631","Tracking":"UPS: 1ZJ73Y900305525887","Notes":""},{"Number":"13862","Date":"4/26/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Audio","VendorRef":"3030149774","Tracking":"UPS: 1Z97Y6030358628400","Notes":""},{"Number":"13861","Date":"4/26/2026","Vendor":"21st CENTURY DISTRIBUTING","Status":"Received","Projects":"Outdoor Audio","VendorRef":"906269","Tracking":"Delivery on 4/30","Notes":""},{"Number":"13860","Date":"4/26/2026","Vendor":"ADI","Status":"Received","Projects":"Outdoor Audio","VendorRef":"15284264","Tracking":"UPS: 1Z23X7550302065163","Notes":""},{"Number":"13859","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149640","Tracking":"UPS: 1Z97Y6030359576045","Notes":""},{"Number":"13858","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Replace Rear Porch Speakers","VendorRef":"3030149637","Tracking":"UPS: 1Z97Y6030359760863","Notes":""},{"Number":"13857","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Replacement Camera","VendorRef":"","Tracking":"","Notes":""},{"Number":"13856","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3030149629","Tracking":"UPS: 1Z97Y6030358027354","Notes":""},{"Number":"13855","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"","Tracking":"","Notes":""},{"Number":"13854","Date":"4/23/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Nelson Residence REV 3","VendorRef":"3628708","Tracking":"UPS: 1Z4R16040340480196","Notes":""},{"Number":"13853","Date":"4/23/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":"Stock"},{"Number":"13852","Date":"4/23/2026","Vendor":"SONANCE","Status":"Received","Projects":"","VendorRef":"3030149531","Tracking":"UPS: 1Z97Y6030358211716","Notes":"Shuler"},{"Number":"13851","Date":"4/22/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15246891","Tracking":"UPS: 1Z23X7550302048093","Notes":"For Jeff"},{"Number":"13850","Date":"4/22/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upfit REV 1","VendorRef":"3103985","Tracking":"FedEX: 518144187138","Notes":""},{"Number":"13849","Date":"4/21/2026","Vendor":"SONOS","Status":"Received","Projects":"","VendorRef":"07482911","Tracking":"UPS: 1ZJ73Y900305478090","Notes":"Stock"},{"Number":"13848","Date":"4/21/2026","Vendor":"ALARM.COM","Status":"Received","Projects":"CCTV Camera System UpFit","VendorRef":"1046502","Tracking":"UPS: 1Z7E919E0391301982","Notes":""},{"Number":"13847","Date":"4/20/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15197361","Tracking":"UPS: 1Z23X7550302025616","Notes":""},{"Number":"13846","Date":"4/20/2026","Vendor":"AMAZON.COM","Status":"Received","Projects":"","VendorRef":"111-2595902-1077046","Tracking":"UPS: 1Z1B084X0334641314","Notes":"Per Jamie"},{"Number":"13845","Date":"4/20/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"9103445","Tracking":"FedEX: 513692177038","Notes":"Plantation Village"},{"Number":"13844","Date":"4/19/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"","Tracking":"","Notes":""},{"Number":"13843","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Received","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"3625251","Tracking":"ABF: 050946351","Notes":""},{"Number":"13842","Date":"4/7/2026","Vendor":"ADI","Status":"Received","Projects":"","VendorRef":"15141763","Tracking":"UPS: 1Z23X7550302002739","Notes":"Min/Max Stock"},{"Number":"13841","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"07470227","Tracking":"UPS: 1ZJ73Y900305396099","Notes":""},{"Number":"13840","Date":"4/16/2026","Vendor":"SONANCE","Status":"Received","Projects":"Outdoor Speakers","VendorRef":"3030148474","Tracking":"UPS: 1Z97Y6030360067520","Notes":""},{"Number":"13839","Date":"4/16/2026","Vendor":"SONOS","Status":"Received","Projects":"Sonos Upgrade","VendorRef":"07470191","Tracking":"UPS: 1ZJ73Y900305396240","Notes":""},{"Number":"13838","Date":"4/16/2026","Vendor":"CRESTRON ELECTRONICS","Status":"Issued","Projects":"Simons Residence - 1140 Vanderhorst Way","VendorRef":"","Tracking":"","Notes":""},{"Number":"13837","Date":"4/26/2026","Vendor":"Leon Speakers","Status":"Received","Projects":"Howard Residence-7 Banks","VendorRef":"","Tracking":"","Notes":""},{"Number":"13836","Date":"4/14/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"AV Upgrade","VendorRef":"3101330","Tracking":"FedEX: 514281740090","Notes":""},{"Number":"13835","Date":"4/14/2026","Vendor":"SONOS","Status":"Received","Projects":"AV Upgrade","VendorRef":"07466593","Tracking":"UPS: 1ZJ73Y900305372597","Notes":""},{"Number":"13834","Date":"4/14/2026","Vendor":"ACTIVE THERMAL MANAGEMENT","Status":"Received","Projects":"AV Upgrade","VendorRef":"","Tracking":"","Notes":""},{"Number":"13833","Date":"4/14/2026","Vendor":"Integra Home Theater","Status":"Received","Projects":"AV Upgrade","VendorRef":"82374087","Tracking":"FedEX: 380535740419","Notes":""},{"Number":"13832","Date":"4/14/2026","Vendor":"DOW ELECTRONICS","Status":"Received","Projects":"AV Upgrade","VendorRef":"SO1105693","Tracking":"ACT: 347667883","Notes":""},{"Number":"13831","Date":"4/13/2026","Vendor":"ADI","Status":"Received","Projects":"Vineyard Trails- Access Control and Cameras","VendorRef":"15057004","Tracking":"","Notes":""},{"Number":"13829","Date":"4/12/2026","Vendor":"SNAP ONE","Status":"Received","Projects":"","VendorRef":"3100406","Tracking":"FedEX: 518144093244","Notes":"Spetrino"}],"timestamp":"Updated May 5, 9:43 AM","showroomItems":[{"id":"foyer","area":"Foyer","detail":"TV / Display / Sound Bar","status":"pass"},{"id":"showroom","area":"Showroom","detail":"Can Lights / Floor Lights / Wall Speakers / Touch Panel","status":"pass"},{"id":"fireplace","area":"Fireplace","detail":"TV / Sound / Control Rack / Shelf Lights","status":"pass"},{"id":"island","area":"Island","detail":"Lights / Pendant Lights / Control Device","status":"pass"},{"id":"couch","area":"Couch Area","detail":"Big TV / Thermostat / Ring Camera","status":"pass"},{"id":"kitchen","area":"Kitchenette","detail":"Wall Lights / TV / Fridge / Lights","status":"pass"},{"id":"theater","area":"Theater Room","detail":"Rack / Control Device / Projector / Sound / Lights / Thermostat","status":"pass"}],"showroomNotes":"","inventoryEntries":[{"date":"2026-05-05","inventory":259377.2,"staging":78565.86}],"logisticsState":{"fleet":{"initials":"","fl1":["pass","unchecked","unchecked","unchecked","unchecked"],"fl2":["pass","unchecked","unchecked","unchecked","unchecked"],"fl3":["pass","unchecked","unchecked","unchecked","unchecked"],"fl4":["unchecked","unchecked","unchecked","unchecked","unchecked"]},"inventory":{"initials":"","in1":["pass","unchecked","unchecked","unchecked","unchecked"],"in2":["pass","unchecked","unchecked","unchecked","unchecked"],"in3":["pass","unchecked","unchecked","unchecked","unchecked"],"in4":["pass","unchecked","unchecked","unchecked","unchecked"]},"facilities":{"initials":"","fa1":["pass","unchecked","unchecked","unchecked","unchecked"],"fa2":["pass","unchecked","unchecked","unchecked","unchecked"],"fa3":["pass","unchecked","unchecked","unchecked","unchecked"],"fa4":["pass","unchecked","unchecked","unchecked","unchecked"],"fa5":["unchecked","unchecked","unchecked","unchecked","unchecked"]}},"logisticsNotes":"","rmaData":[]};
-</script></head>
+</head>
 <body>
 
 <header>
   <div class="logo">
     <img src="data:image/png;base64,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" alt="Port City Sound &amp; Security" style="height:36px;width:auto;object-fit:contain;">
-    <div>
-      <div class="logo-sub" style="margin-top:2px">Logistics Dashboard</div>
-    </div>
+    <div><div class="logo-sub" style="margin-top:2px">Logistics Dashboard</div></div>
   </div>
   <div class="header-right">
-    <span id="last-updated">Updated May 5, 9:43 AM</span>
-    <button class="btn" id="save-btn" onclick="saveSnapshot()" style="background: rgb(22, 163, 74); display: flex;">💾 Save &amp; Share</button>
+    <span id="sync-status" class="synced">● Live</span>
+    <span id="last-updated"></span>
     <label class="btn" style="cursor:pointer;">
       ⬆ Import D-Tools Export
       <input type="file" accept=".xlsx,.csv" style="display:none" onchange="handleFileInput(this)">
@@ -308,15 +240,14 @@
 </header>
 
 <main>
-
   <!-- Drop Zone -->
-  <div id="drop-zone" ondragover="event.preventDefault(); this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)" class="has-data">
+  <div id="drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleDrop(event)">
     <input type="file" accept=".xlsx,.csv" onchange="handleFileInput(this)">
     <div class="drop-icon">📂</div>
     <div class="drop-title">Drop your D-Tools PO export here</div>
     <div class="drop-sub">Supports .xlsx or .csv — drag and drop to refresh</div>
     <div class="drop-compact">
-      <span>📄</span><span id="loaded-filename">Purchase Orders - May 05, 2026 07 52.xlsx</span>
+      <span>📄</span><span id="loaded-filename">—</span>
       <span style="color:#4ade80">✓ Loaded</span>
       <span style="opacity:0.5">· Drop a new file to refresh</span>
     </div>
@@ -324,20 +255,20 @@
 
   <!-- KPIs -->
   <div class="kpis">
-    <div class="kpi"><div class="kpi-label">Total POs</div><div class="kpi-value" id="kpi-total">49</div></div>
-    <div class="kpi"><div class="kpi-label">Issued</div><div class="kpi-value blue" id="kpi-issued">7</div></div>
-    <div class="kpi"><div class="kpi-label">Partially Received</div><div class="kpi-value yellow" id="kpi-partial">1</div></div>
-    <div class="kpi"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">41</div></div>
-    <div class="kpi"><div class="kpi-label">Draft</div><div class="kpi-value gray" id="kpi-draft">0</div></div>
+    <div class="kpi"><div class="kpi-label">Total POs</div><div class="kpi-value" id="kpi-total">—</div></div>
+    <div class="kpi"><div class="kpi-label">Issued</div><div class="kpi-value blue" id="kpi-issued">—</div></div>
+    <div class="kpi"><div class="kpi-label">Partially Received</div><div class="kpi-value yellow" id="kpi-partial">—</div></div>
+    <div class="kpi"><div class="kpi-label">Received</div><div class="kpi-value green" id="kpi-received">—</div></div>
+    <div class="kpi"><div class="kpi-label">Draft</div><div class="kpi-value gray" id="kpi-draft">—</div></div>
   </div>
 
   <!-- Filter bar -->
   <div class="filter-bar">
     <span class="filter-label">Filter:</span>
-    <button class="filter-btn active" onclick="setFilter('All', this)">All</button>
-    <button class="filter-btn" onclick="setFilter('Issued', this)">Issued</button>
-    <button class="filter-btn" onclick="setFilter('Partially Received', this)">Partially Received</button>
-    <button class="filter-btn" onclick="setFilter('Draft', this)">Draft</button>
+    <button class="filter-btn active" onclick="setFilter('All',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('Issued',this)">Issued</button>
+    <button class="filter-btn" onclick="setFilter('Partially Received',this)">Partially Received</button>
+    <button class="filter-btn" onclick="setFilter('Draft',this)">Draft</button>
     <button class="filter-btn toggle-received" id="toggle-received-btn" onclick="toggleReceived()">Show Received</button>
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
@@ -345,7 +276,7 @@
     </div>
   </div>
 
-  <!-- Table -->
+  <!-- PO Table -->
   <div class="table-wrap">
     <table id="po-table">
       <thead>
@@ -361,95 +292,19 @@
         </tr>
       </thead>
       <tbody id="po-tbody">
-    <tr class="fade-in " style="animation-delay:0s">
-      <td><span class="po-num">13878</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
-      <td><span class="vendor-name">SNAP ONE</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name">WiFi Upfit</span></td>
-      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text"></span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.02s">
-      <td><span class="po-num">13877</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
-      <td><span class="vendor-name">BAYSIDE ELECTRIC SUPPLY CO., INC.</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name">Vineyard Trails- Access Control and Cameras</span></td>
-      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text"></span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.04s">
-      <td><span class="po-num">13876</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
-      <td><span class="vendor-name">21st CENTURY DISTRIBUTING</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
-      <td><span class="po-num">908431</span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text">Stock</span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.06s">
-      <td><span class="po-num">13875</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
-      <td><span class="vendor-name">SNAP ONE</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
-      <td><span class="po-num">9117289</span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text">Lanzi</span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.08s">
-      <td><span class="po-num">13874</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">5/3/2026</td>
-      <td><span class="vendor-name">ADI</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
-      <td><span class="po-num">15404970</span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text">for J&amp;S per Jeff</span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.1s">
-      <td><span class="po-num">13873</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/29/2026</td>
-      <td><span class="vendor-name">SNAP ONE</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name"><span style="opacity:0.3">—</span></span></td>
-      <td><span class="po-num">9117847</span></td>
-      <td><a href="https://www.fedex.com/fedextrack/?trknbr=518144248431" target="_blank" class="tracking-link" title="Track with FEDEX">518144248431 ↗</a></td>
-      <td><span class="notes-text"></span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.12s">
-      <td><span class="po-num">13864</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/27/2026</td>
-      <td><span class="vendor-name">ADI</span></td>
-      <td><span class="badge badge-partial">Partially Received</span></td>
-      <td><span class="project-name">CAT6A Drops</span></td>
-      <td><span class="po-num">15306521</span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text"></span></td>
-    </tr>
-    <tr class="fade-in " style="animation-delay:0.14s">
-      <td><span class="po-num">13838</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">4/16/2026</td>
-      <td><span class="vendor-name">CRESTRON ELECTRONICS</span></td>
-      <td><span class="badge badge-issued">Issued</span></td>
-      <td><span class="project-name">Simons Residence - 1140 Vanderhorst Way</span></td>
-      <td><span class="po-num"><span style="opacity:0.3">—</span></span></td>
-      <td><span style="opacity:0.3">—</span></td>
-      <td><span class="notes-text"></span></td>
-    </tr></tbody>
+        <tr><td colspan="8"><div id="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No data loaded yet</div>
+          <div class="empty-sub">Drop your D-Tools PO export above to get started</div>
+        </div></td></tr>
+      </tbody>
     </table>
   </div>
 
-
-  <!-- ── RMA Tracker ── -->
+  <!-- RMA Tracker -->
   <div class="section-header" style="margin-top:36px">
     <div class="section-title">🔄 Open RMAs <span class="rma-count" id="rma-count"></span></div>
   </div>
-
   <div class="rma-form">
     <div class="rma-field wide"><label>Client</label><input type="text" id="rma-client" placeholder="e.g. Smith Residence"></div>
     <div class="rma-field wide"><label>Vendor</label><input type="text" id="rma-vendor" placeholder="e.g. Sonos"></div>
@@ -459,968 +314,488 @@
     <div class="rma-field status">
       <label>Status</label>
       <select id="rma-status">
-        <option value="Submitted">Submitted</option>
-        <option value="Pending Vendor">Pending Vendor</option>
-        <option value="Replacement Ordered">Replacement Ordered</option>
-        <option value="Resolved">Resolved</option>
+        <option>Submitted</option>
+        <option>Pending Vendor</option>
+        <option>Replacement Ordered</option>
+        <option>Resolved</option>
       </select>
     </div>
     <button class="rma-add-btn" onclick="addRMA()">+ Add RMA</button>
   </div>
-
   <div class="table-wrap" id="rma-wrap">
     <div class="rma-empty">No open RMAs — add one above</div>
   </div>
 
-  <!-- ── Inventory Chart ── -->
+  <!-- Inventory Chart -->
   <div class="section-header">
     <div class="section-title">📦 Inventory Valuations</div>
   </div>
   <div class="chart-wrap">
     <div class="chart-controls">
-      <div class="chart-field">
-        <label>Date</label>
-        <input type="date" id="inv-date">
-      </div>
-      <div class="chart-field">
-        <label>Inventory ($)</label>
-        <input type="number" id="inv-inventory" placeholder="259377.20" step="0.01">
-      </div>
-      <div class="chart-field">
-        <label>Staging ($)</label>
-        <input type="number" id="inv-staging" placeholder="78565.86" step="0.01">
-      </div>
+      <div class="chart-field"><label>Date</label><input type="date" id="inv-date"></div>
+      <div class="chart-field"><label>Inventory ($)</label><input type="number" id="inv-inventory" placeholder="259377.20" step="0.01"></div>
+      <div class="chart-field"><label>Staging ($)</label><input type="number" id="inv-staging" placeholder="78565.86" step="0.01"></div>
       <button class="add-entry-btn" onclick="addInventoryEntry()">+ Add Entry</button>
       <button class="ghost-btn" onclick="clearLastEntry()" style="align-self:flex-end">✕ Remove Last</button>
     </div>
-    <div class="chart-totals" id="chart-totals">
-    <div class="chart-total">Current Inventory <span class="inv">$259,377.20</span></div>
-    <div class="chart-total">Current Staging <span class="stg">$78,565.86</span></div>
-    <div class="chart-total">Combined Total <span class="comb">$337,943.06</span></div></div>
-    <div id="chart-area"><canvas id="inv-chart" width="1286" height="260" style="display: block; box-sizing: border-box; height: 260px; width: 1286px;"></canvas></div>
+    <div class="chart-totals" id="chart-totals"></div>
+    <div id="chart-area"><div class="no-chart-data">No entries yet — add your first inventory total above</div></div>
   </div>
 
-  <!-- ── Showroom Checklist ── -->
+  <!-- Showroom Checklist -->
   <div class="section-header">
     <div class="section-title">🏠 Showroom Weekly Checklist
-      <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace">· Week of May 4, 2026</span>
+      <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
-    <button class="ghost-btn" onclick="resetChecklist('showroom')">↺ Reset Week</button>
+    <button class="ghost-btn" onclick="resetChecklist()">↺ Reset Week</button>
   </div>
-  <div id="showroom-grid" class="checklist-grid"><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','foyer')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Foyer</div><div class="checklist-sub">TV / Display / Sound Bar</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','showroom')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Showroom</div><div class="checklist-sub">Can Lights / Floor Lights / Wall Speakers / Touch Panel</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','fireplace')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Fireplace</div><div class="checklist-sub">TV / Sound / Control Rack / Shelf Lights</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','island')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Island</div><div class="checklist-sub">Lights / Pendant Lights / Control Device</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','couch')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Couch Area</div><div class="checklist-sub">Big TV / Thermostat / Ring Camera</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','kitchen')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Kitchenette</div><div class="checklist-sub">Wall Lights / TV / Fridge / Lights</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div><div class="checklist-item pass" onclick="toggleChecklistItem('showroom','theater')" title="Click to toggle">
-      <div class="checklist-dot pass">✓</div>
-      <div style="flex:1"><div class="checklist-name">Theater Room</div><div class="checklist-sub">Rack / Control Device / Projector / Sound / Lights / Thermostat</div></div>
-      <div style="font-size:11px;font-weight:600;color:#86efac;white-space:nowrap">Pass</div>
-    </div></div>
+  <div id="showroom-grid" class="checklist-grid"></div>
   <div class="notes-box">
     <label>Showroom Notes</label>
-    <textarea id="showroom-notes" placeholder="Note any issues, failures, or follow-ups here…"></textarea>
+    <textarea id="showroom-notes" placeholder="Note any issues, failures, or follow-ups here…" oninput="saveShowroomNotes()"></textarea>
   </div>
 
-
-  <!-- ── Logistics Checklist ── -->
+  <!-- Logistics Checklist -->
   <div class="section-header">
     <div class="section-title">📋 Logistics Checklist
-      <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace">· Week of May 4, 2026</span>
+      <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
     <button class="ghost-btn" onclick="resetLogistics()">↺ Reset Week</button>
   </div>
-  <div id="logistics-wrap"><div class="logistics-section">
-      <div class="logistics-section-header">
-        <span class="logistics-section-title">Fleet</span>
-        <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['fleet'].initials=this.value">
-        </div>
-      </div>
-      <div class="logistics-row">
-        <div class="logistics-task">All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl1',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl1',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Service appointments made for any vehicle issues.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl2',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl2',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Inspect vinyl condition and overall exterior presentation of vehicles.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('fleet','fl3',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl3',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row monthly">
-        <div class="logistics-task">Van products, parts, and tools inventoried and adjusted as needed.<span class="monthly-tag">Monthly</span></div>
-        <div class="day-cells"><div class="day-cell unknown" onclick="toggleDayCell('fleet','fl4',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
-          <span class="day-val" style="font-size:11px;font-weight:600;color:#64748b">Mark Done</span>
-        </div></div>
-      </div>
-    </div><div class="logistics-section">
-      <div class="logistics-section-header">
-        <span class="logistics-section-title">Inventory &amp; Staging</span>
-        <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['inventory'].initials=this.value">
-        </div>
-      </div>
-      <div class="logistics-row">
-        <div class="logistics-task">All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in1',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in1',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in2',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in2',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Process any defective items for RMA return and reorder any necessary replacement parts.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in3',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in3',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Organize and clean trash and debris from warehouse.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('inventory','in4',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('inventory','in4',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div>
-    </div><div class="logistics-section">
-      <div class="logistics-section-header">
-        <span class="logistics-section-title">Facilities</span>
-        <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="" placeholder="JMS" oninput="logisticsState['facilities'].initials=this.value">
-        </div>
-      </div>
-      <div class="logistics-row">
-        <div class="logistics-task">Be present at Morning Stand Up.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa1',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa1',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa2',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa2',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">All van keys are accounted for at the start/end of shift.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa3',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa3',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row">
-        <div class="logistics-task">Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.</div>
-        <div class="day-cells"><div class="day-cell pass" onclick="toggleDayCell('facilities','fa4',0)" title="Mon">
-            <span class="day-label">M</span>
-            <span class="day-val">✓</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',1)" title="Tue">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',2)" title="Wed">
-            <span class="day-label">W</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',3)" title="Thu">
-            <span class="day-label">T</span>
-            <span class="day-val">·</span>
-          </div><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa4',4)" title="Fri">
-            <span class="day-label">F</span>
-            <span class="day-val">·</span>
-          </div></div>
-      </div><div class="logistics-row monthly">
-        <div class="logistics-task">Fire extinguishers and first aid kits checked and restocked when necessary.<span class="monthly-tag">Monthly</span></div>
-        <div class="day-cells"><div class="day-cell unknown" onclick="toggleDayCell('facilities','fa5',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
-          <span class="day-val" style="font-size:11px;font-weight:600;color:#64748b">Mark Done</span>
-        </div></div>
-      </div>
-    </div></div>
+  <div id="logistics-wrap"></div>
   <div class="notes-box">
     <label>Logistics Notes</label>
-    <textarea id="logistics-notes" placeholder="Note any issues, follow-ups, or observations here…"></textarea>
+    <textarea id="logistics-notes" placeholder="Note any issues, follow-ups, or observations here…" oninput="saveLogisticsNotes()"></textarea>
   </div>
-
 
 </main>
 
 <footer>Port City Sound &amp; Security · Logistics Dashboard · Data sourced from D-Tools SI</footer>
 
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, deleteDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAIvUvWCInpYNDRdSkUO7YLW-F4POxxgFg",
+  authDomain: "portcity-logistics-dashboard.firebaseapp.com",
+  projectId: "portcity-logistics-dashboard",
+  storageBucket: "portcity-logistics-dashboard.firebasestorage.app",
+  messagingSenderId: "1038238701860",
+  appId: "1:1038238701860:web:b21c837d9d6750ae263bb1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── Sync status helper ────────────────────────────────────────────────────────
+function setSyncStatus(state) {
+  const el = document.getElementById('sync-status');
+  el.className = 'synced';
+  if (state === 'saving') { el.textContent = '● Saving…'; el.className = 'saving'; }
+  else if (state === 'error') { el.textContent = '● Error'; el.className = 'error'; }
+  else { el.textContent = '● Live'; el.className = 'synced'; }
+}
+
+async function saveDoc(path, data) {
+  setSyncStatus('saving');
+  try {
+    await setDoc(doc(db, path), data, { merge: true });
+    setSyncStatus('synced');
+  } catch(e) { setSyncStatus('error'); console.error(e); }
+}
+
+// ── Expose to global scope ───────────────────────────────────────────────────
+window._db = db;
+window._doc = doc;
+window._setDoc = setDoc;
+window._addDoc = addDoc;
+window._deleteDoc = deleteDoc;
+window._updateDoc = updateDoc;
+window._getDocs = getDocs;
+window._collection = collection;
+window._onSnapshot = onSnapshot;
+window._getDoc = getDoc;
+window._saveDoc = saveDoc;
+window._setSyncStatus = setSyncStatus;
+
+// ── Init all listeners once Firebase is ready ─────────────────────────────────
+window.addEventListener('firebase-ready', () => {
+  initDashboard();
+});
+window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
 <script>
 // ═══════════════════════════════════════════════════════════════════════════════
-// PO DATA
+// MAIN INIT
 // ═══════════════════════════════════════════════════════════════════════════════
-let allData = [];
-let currentFilter = 'All';
-let showReceived = false;
-let sortCol = 'Date';
-let sortAsc = false;
+function initDashboard() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inv-date').value   = today;
+  document.getElementById('rma-date').value   = today;
 
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('drop-zone').classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) processFile(file);
+  renderChecklist();
+  initLogisticsState();
+  renderLogistics();
+  renderRMA();
+
+  // Listen to Firebase collections
+  listenShowroom();
+  listenLogistics();
+  listenInventory();
+  listenRMA();
 }
-function handleFileInput(input) {
-  const file = input.files[0];
-  if (file) processFile(file);
+
+// Wait for Firebase module to expose globals
+function waitForFirebase(cb) {
+  if (window._db) cb();
+  else window.addEventListener('firebase-ready', cb);
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PO DATA (local only — from D-Tools export)
+// ═══════════════════════════════════════════════════════════════════════════════
+let allData = [], currentFilter = 'All', showReceived = false, sortCol = 'Date', sortAsc = false;
+
+function handleDrop(e) { e.preventDefault(); this.classList.remove('drag-over'); processFile(e.dataTransfer.files[0]); }
+function handleFileInput(input) { if (input.files[0]) processFile(input.files[0]); }
 
 function processFile(file) {
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = e => {
     try {
-      const data = new Uint8Array(e.target.result);
-      const wb = XLSX.read(data, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-      const sixMonthsAgo = new Date();
-      sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval:'' });
+      const sixMonthsAgo = new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth()-6);
       allData = rows.map(row => ({
-        Number:    String(row['Number'] || row['PO #'] || row['PO#'] || '').trim(),
+        Number:    String(row['Number']||row['PO #']||row['PO#']||'').trim(),
         Date:      formatDate(row['Date']),
-        Vendor:    String(row['Vendor'] || '').trim(),
-        Status:    String(row['Status'] || '').trim(),
-        Projects:  cleanProject(String(row['Projects'] || '')),
-        VendorRef: String(row['Vendor Reference Number'] || row['Vendor Ref'] || '').trim(),
-        Tracking:  String(row['Tracking Number'] || row['Tracking'] || '').trim(),
-        Notes:     String(row['Notes'] || '').trim(),
+        Vendor:    String(row['Vendor']||'').trim(),
+        Status:    String(row['Status']||'').trim(),
+        Projects:  cleanProject(String(row['Projects']||'')),
+        VendorRef: String(row['Vendor Reference Number']||row['Vendor Ref']||'').trim(),
+        Tracking:  String(row['Tracking Number']||row['Tracking']||'').trim(),
+        Notes:     String(row['Notes']||'').trim(),
       })).filter(r => {
         if (r.Status !== 'Received') return true;
-        const d = new Date(r.Date);
-        return !isNaN(d) && d >= sixMonthsAgo;
+        const d = new Date(r.Date); return !isNaN(d) && d >= sixMonthsAgo;
       });
       document.getElementById('loaded-filename').textContent = file.name;
       document.getElementById('drop-zone').classList.add('has-data');
-      const ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-      document.getElementById('last-updated').textContent = 'Updated ' + ts;
-      document.getElementById('save-btn').style.display = 'flex';
-      updateKPIs();
-      renderTable();
-    } catch(err) {
-      alert("Could not read file. Make sure it's a D-Tools .xlsx or .csv export.");
-      console.error(err);
-    }
+      document.getElementById('last-updated').textContent = 'POs updated ' + new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+      updateKPIs(); renderTable();
+    } catch(err) { alert("Could not read file."); console.error(err); }
   };
   reader.readAsArrayBuffer(file);
 }
 
 function formatDate(val) {
   if (!val) return '';
-  if (typeof val === 'number') {
-    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
-    return d.toLocaleDateString('en-US', {month:'numeric',day:'numeric',year:'numeric'});
-  }
+  if (typeof val === 'number') { const d = new Date(Math.round((val-25569)*86400*1000)); return d.toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}); }
   return String(val);
 }
-
 function cleanProject(raw) {
   if (!raw.trim()) return '';
-  let p = raw;
-  if (p.includes(' : ')) p = p.split(' : ')[1];
-  p = p.replace(/\s*\(PORT\s*-?\s*\d+\)\s*$/i, '').trim();
-  return p;
+  let p = raw; if (p.includes(' : ')) p = p.split(' : ')[1];
+  return p.replace(/\s*\(PORT\s*-?\s*\d+\)\s*$/i,'').trim();
 }
-
-// ── Tracking link helper ─────────────────────────────────────────────────────
 function trackingLink(raw) {
   if (!raw) return '<span style="opacity:0.3">—</span>';
-  const str = raw.trim();
-  const lower = str.toLowerCase();
-
-  let carrier = '';
-  let number  = str;
-
-  // Try to split "Carrier: NUMBER" format
-  if (str.includes(':')) {
-    const parts = str.split(':');
-    carrier = parts[0].trim().toLowerCase();
-    number  = parts.slice(1).join(':').trim();
-  } else if (/^1Z/i.test(str)) {
-    carrier = 'ups';
-  } else if (/^\d{12,22}$/.test(str) && str.length >= 15) {
-    carrier = 'fedex';
-  } else if (/^9[2345]\d{18,}$/.test(str)) {
-    carrier = 'usps';
-  }
-
-  let url = '';
-  if (carrier.includes('fedex')) url = `https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(number)}`;
-  else if (carrier.includes('ups')) url = `https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`;
-  else if (carrier.includes('usps')) url = `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`;
-
-  if (url) {
-    return `<a href="${url}" target="_blank" class="tracking-link" title="Track with ${carrier.toUpperCase()}">${number} ↗</a>`;
-  }
+  const str = raw.trim(); let carrier='', number=str;
+  if (str.includes(':')) { const p=str.split(':'); carrier=p[0].trim().toLowerCase(); number=p.slice(1).join(':').trim(); }
+  else if (/^1Z/i.test(str)) carrier='ups';
+  else if (/^\d{15,22}$/.test(str)) carrier='fedex';
+  else if (/^9[2345]\d{18,}$/.test(str)) carrier='usps';
+  let url='';
+  if (carrier.includes('fedex')) url=`https://www.fedex.com/fedextrack/?trknbr=${encodeURIComponent(number)}`;
+  else if (carrier.includes('ups')) url=`https://www.ups.com/track?tracknum=${encodeURIComponent(number)}`;
+  else if (carrier.includes('usps')) url=`https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(number)}`;
+  if (url) return `<a href="${url}" target="_blank" class="tracking-link">${number} ↗</a>`;
   return `<span class="tracking-plain">${str}</span>`;
 }
-
-// ── KPIs ─────────────────────────────────────────────────────────────────────
 function updateKPIs() {
-  const counts = { Issued:0, 'Partially Received':0, Received:0, Draft:0 };
-  allData.forEach(r => { if (counts[r.Status] !== undefined) counts[r.Status]++; });
-  document.getElementById('kpi-total').textContent    = allData.length;
-  document.getElementById('kpi-issued').textContent   = counts['Issued'];
-  document.getElementById('kpi-partial').textContent  = counts['Partially Received'];
-  document.getElementById('kpi-received').textContent = counts['Received'];
-  document.getElementById('kpi-draft').textContent    = counts['Draft'];
+  const c={Issued:0,'Partially Received':0,Received:0,Draft:0};
+  allData.forEach(r=>{if(c[r.Status]!==undefined)c[r.Status]++;});
+  document.getElementById('kpi-total').textContent=allData.length;
+  document.getElementById('kpi-issued').textContent=c['Issued'];
+  document.getElementById('kpi-partial').textContent=c['Partially Received'];
+  document.getElementById('kpi-received').textContent=c['Received'];
+  document.getElementById('kpi-draft').textContent=c['Draft'];
 }
-
-// ── Filter / Toggle ──────────────────────────────────────────────────────────
-function setFilter(val, btn) {
-  currentFilter = val;
-  document.querySelectorAll('.filter-btn:not(.toggle-received)').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderTable();
-}
-
-function toggleReceived() {
-  showReceived = !showReceived;
-  const btn = document.getElementById('toggle-received-btn');
-  btn.textContent = showReceived ? 'Hide Received' : 'Show Received';
-  btn.classList.toggle('on', showReceived);
-  renderTable();
-}
-
-// ── Sort ─────────────────────────────────────────────────────────────────────
-function sortBy(col) {
-  if (sortCol === col) sortAsc = !sortAsc;
-  else { sortCol = col; sortAsc = true; }
-  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
-  const idx = ['Number','Date','Vendor','Status','Projects'].indexOf(col);
-  if (idx >= 0) document.querySelectorAll('thead th')[idx].classList.add('sorted');
-  renderTable();
-}
-
-// ── Render table ─────────────────────────────────────────────────────────────
-function statusBadge(status) {
-  const map = { 'Issued':'badge-issued','Partially Received':'badge-partial','Received':'badge-received','Draft':'badge-draft','Cancelled':'badge-cancelled' };
-  return `<span class="badge ${map[status]||'badge-draft'}">${status}</span>`;
-}
-
+function setFilter(val,btn) { currentFilter=val; document.querySelectorAll('.filter-btn:not(.toggle-received)').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); renderTable(); }
+function toggleReceived() { showReceived=!showReceived; const b=document.getElementById('toggle-received-btn'); b.textContent=showReceived?'Hide Received':'Show Received'; b.classList.toggle('on',showReceived); renderTable(); }
+function sortBy(col) { if(sortCol===col)sortAsc=!sortAsc; else{sortCol=col;sortAsc=true;} document.querySelectorAll('thead th').forEach(t=>t.classList.remove('sorted')); const i=['Number','Date','Vendor','Status','Projects'].indexOf(col); if(i>=0)document.querySelectorAll('thead th')[i].classList.add('sorted'); renderTable(); }
+function statusBadge(s) { const m={'Issued':'badge-issued','Partially Received':'badge-partial','Received':'badge-received','Draft':'badge-draft','Cancelled':'badge-cancelled'}; return `<span class="badge ${m[s]||'badge-draft'}">${s}</span>`; }
 function renderTable() {
-  const search = document.getElementById('search-input').value.toLowerCase();
-  const hasSearch = search.length > 0;
-
-  let data = allData.filter(r => {
-    const isReceived = r.Status === 'Received';
-    // Always include in search regardless of toggle
-    const matchSearch = !hasSearch || (
-      r.Number.toLowerCase().includes(search) ||
-      r.Vendor.toLowerCase().includes(search) ||
-      r.Projects.toLowerCase().includes(search) ||
-      r.Notes.toLowerCase().includes(search) ||
-      r.VendorRef.toLowerCase().includes(search)
-    );
-    if (!matchSearch) return false;
-    // If searching, show all matches regardless of received toggle
-    if (hasSearch) return true;
-    // Otherwise apply filter + received toggle
-    if (isReceived && !showReceived) return false;
-    if (currentFilter !== 'All' && r.Status !== currentFilter) return false;
+  const search=document.getElementById('search-input').value.toLowerCase(), has=search.length>0;
+  let data=allData.filter(r=>{
+    const isR=r.Status==='Received';
+    const mS=!has||(r.Number.toLowerCase().includes(search)||r.Vendor.toLowerCase().includes(search)||r.Projects.toLowerCase().includes(search)||r.Notes.toLowerCase().includes(search)||r.VendorRef.toLowerCase().includes(search));
+    if(!mS)return false; if(has)return true;
+    if(isR&&!showReceived)return false;
+    if(currentFilter!=='All'&&r.Status!==currentFilter)return false;
     return true;
   });
-
-  data.sort((a, b) => {
-    let av = a[sortCol]||'', bv = b[sortCol]||'';
-    if (sortCol === 'Date') { av = new Date(av); bv = new Date(bv); return sortAsc ? av-bv : bv-av; }
-    av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
-    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
-  });
-
-  const tbody = document.getElementById('po-tbody');
-  if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div id="empty-state">
-      <div class="empty-icon">${allData.length ? '🔍' : '📋'}</div>
-      <div class="empty-title">${allData.length ? 'No results found' : 'No data loaded yet'}</div>
-      <div class="empty-sub">${allData.length ? 'Try adjusting your filter or search' : 'Drop your D-Tools PO export above to get started'}</div>
-    </div></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = data.map((r, i) => `
-    <tr class="fade-in ${r.Status==='Received'?'row-received':''}" style="animation-delay:${Math.min(i*0.02,0.3)}s">
-      <td><span class="po-num">${r.Number}</span></td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.Date}</td>
-      <td><span class="vendor-name">${r.Vendor}</span></td>
-      <td>${statusBadge(r.Status)}</td>
-      <td><span class="project-name">${r.Projects||'<span style="opacity:0.3">—</span>'}</span></td>
-      <td><span class="po-num">${r.VendorRef||'<span style="opacity:0.3">—</span>'}</span></td>
-      <td>${trackingLink(r.Tracking)}</td>
-      <td><span class="notes-text">${r.Notes||''}</span></td>
-    </tr>`).join('');
+  data.sort((a,b)=>{let av=a[sortCol]||'',bv=b[sortCol]||''; if(sortCol==='Date'){av=new Date(av);bv=new Date(bv);return sortAsc?av-bv:bv-av;} av=String(av).toLowerCase();bv=String(bv).toLowerCase();return sortAsc?av.localeCompare(bv):bv.localeCompare(av);});
+  const tbody=document.getElementById('po-tbody');
+  if(!data.length){tbody.innerHTML=`<tr><td colspan="8"><div id="empty-state"><div class="empty-icon">${allData.length?'🔍':'📋'}</div><div class="empty-title">${allData.length?'No results found':'No data loaded yet'}</div><div class="empty-sub">${allData.length?'Try adjusting your filter or search':'Drop your D-Tools PO export above to get started'}</div></div></td></tr>`;return;}
+  tbody.innerHTML=data.map((r,i)=>`<tr class="fade-in ${r.Status==='Received'?'row-received':''}" style="animation-delay:${Math.min(i*0.02,0.3)}s"><td><span class="po-num">${r.Number}</span></td><td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.Date}</td><td><span class="vendor-name">${r.Vendor}</span></td><td>${statusBadge(r.Status)}</td><td><span class="project-name">${r.Projects||'<span style="opacity:0.3">—</span>'}</span></td><td><span class="po-num">${r.VendorRef||'<span style="opacity:0.3">—</span>'}</span></td><td>${trackingLink(r.Tracking)}</td><td><span class="notes-text">${r.Notes||''}</span></td></tr>`).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SHOWROOM CHECKLIST
+// SHOWROOM CHECKLIST — Firebase
 // ═══════════════════════════════════════════════════════════════════════════════
 const SHOWROOM_ITEMS = [
-  { id:'foyer',     area:'Foyer',        detail:'TV / Display / Sound Bar' },
-  { id:'showroom',  area:'Showroom',     detail:'Can Lights / Floor Lights / Wall Speakers / Touch Panel' },
-  { id:'fireplace', area:'Fireplace',    detail:'TV / Sound / Control Rack / Shelf Lights' },
-  { id:'island',    area:'Island',       detail:'Lights / Pendant Lights / Control Device' },
-  { id:'couch',     area:'Couch Area',   detail:'Big TV / Thermostat / Ring Camera' },
-  { id:'kitchen',   area:'Kitchenette',  detail:'Wall Lights / TV / Fridge / Lights' },
-  { id:'theater',   area:'Theater Room', detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat' },
+  {id:'foyer',    area:'Foyer',       detail:'TV / Display / Sound Bar'},
+  {id:'showroom', area:'Showroom',    detail:'Can Lights / Floor Lights / Wall Speakers / Touch Panel'},
+  {id:'fireplace',area:'Fireplace',   detail:'TV / Sound / Control Rack / Shelf Lights'},
+  {id:'island',   area:'Island',      detail:'Lights / Pendant Lights / Control Device'},
+  {id:'couch',    area:'Couch Area',  detail:'Big TV / Thermostat / Ring Camera'},
+  {id:'kitchen',  area:'Kitchenette', detail:'Wall Lights / TV / Fridge / Lights'},
+  {id:'theater',  area:'Theater Room',detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat'},
 ];
-
-let showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
+let showroomItems = SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
 
 function getWeekLabel() {
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - ((now.getDay()+6)%7));
-  return 'Week of ' + monday.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'});
+  const now=new Date(), mon=new Date(now); mon.setDate(now.getDate()-((now.getDay()+6)%7));
+  return 'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 }
 
-function toggleChecklistItem(prefix, id) {
-  const list = prefix === 'showroom' ? showroomItems : showroomItems;
-  const item = list.find(i => i.id === id);
-  if (!item) return;
-  item.status = item.status==='unchecked' ? 'pass' : item.status==='pass' ? 'fail' : 'unchecked';
-  renderChecklist(prefix);
-}
-
-function resetChecklist(prefix) {
-  showroomItems = SHOWROOM_ITEMS.map(i => ({ ...i, status:'unchecked' }));
-  document.getElementById('showroom-notes').value = '';
-  renderChecklist(prefix);
-}
-
-function renderChecklist(prefix) {
-  document.getElementById('showroom-week').textContent = '· ' + getWeekLabel();
-  const grid = document.getElementById('showroom-grid');
-  grid.innerHTML = showroomItems.map(item => {
-    const s = item.status;
-    const cls   = s==='pass' ? 'pass' : s==='fail' ? 'fail' : 'unknown';
-    const icon  = s==='pass' ? '✓'   : s==='fail' ? '✕'    : '—';
-    const label = s==='pass' ? 'Pass' : s==='fail' ? 'Fail' : 'Tap to check';
-    const lc    = s==='pass' ? '#86efac' : s==='fail' ? '#fca5a5' : '#475569';
-    return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('showroom','${item.id}')" title="Click to toggle">
-      <div class="checklist-dot ${cls}">${icon}</div>
-      <div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div>
-      <div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div>
-    </div>`;
-  }).join('');
-}
-
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// LOGISTICS CHECKLIST
-// ═══════════════════════════════════════════════════════════════════════════════
-const LOGISTICS_SECTIONS = [
-  {
-    id: 'fleet',
-    title: 'Fleet',
-    tasks: [
-      { id:'fl1', text:'All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)', monthly: false },
-      { id:'fl2', text:'Service appointments made for any vehicle issues.', monthly: false },
-      { id:'fl3', text:'Inspect vinyl condition and overall exterior presentation of vehicles.', monthly: false },
-      { id:'fl4', text:'Van products, parts, and tools inventoried and adjusted as needed.', monthly: true },
-    ]
-  },
-  {
-    id: 'inventory',
-    title: 'Inventory & Staging',
-    tasks: [
-      { id:'in1', text:"All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.", monthly: false },
-      { id:'in2', text:'Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.', monthly: false },
-      { id:'in3', text:'Process any defective items for RMA return and reorder any necessary replacement parts.', monthly: false },
-      { id:'in4', text:'Organize and clean trash and debris from warehouse.', monthly: false },
-    ]
-  },
-  {
-    id: 'facilities',
-    title: 'Facilities',
-    tasks: [
-      { id:'fa1', text:'Be present at Morning Stand Up.', monthly: false },
-      { id:'fa2', text:'Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.', monthly: false },
-      { id:'fa3', text:'All van keys are accounted for at the start/end of shift.', monthly: false },
-      { id:'fa4', text:'Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.', monthly: false },
-      { id:'fa5', text:'Fire extinguishers and first aid kits checked and restocked when necessary.', monthly: true },
-    ]
-  },
-];
-
-const DAYS = ['M','T','W','T','F'];
-
-// State: { sectionId: { initials, tasks: { taskId: ['unchecked','pass','fail','unchecked','pass'] } } }
-let logisticsState = {};
-
-function initLogisticsState() {
-  logisticsState = {};
-  LOGISTICS_SECTIONS.forEach(sec => {
-    logisticsState[sec.id] = { initials: '' };
-    sec.tasks.forEach(task => {
-      logisticsState[sec.id][task.id] = ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+function listenShowroom() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','showroom'), snap=>{
+      if(snap.exists()) { const d=snap.data(); if(d.items)showroomItems=d.items; if(d.notes)document.getElementById('showroom-notes').value=d.notes; renderChecklist(); }
     });
   });
 }
 
-function toggleDayCell(secId, taskId, dayIdx) {
-  const cur = logisticsState[secId][taskId][dayIdx];
-  logisticsState[secId][taskId][dayIdx] = cur === 'unchecked' ? 'pass' : cur === 'pass' ? 'fail' : 'unchecked';
-  renderLogistics();
+async function toggleChecklistItem(id) {
+  const item=showroomItems.find(i=>i.id===id); if(!item)return;
+  item.status=item.status==='unchecked'?'pass':item.status==='pass'?'fail':'unchecked';
+  renderChecklist();
+  await window._saveDoc('dashboard/showroom',{items:showroomItems});
 }
 
-function resetLogistics() {
-  initLogisticsState();
-  document.getElementById('logistics-notes').value = '';
-  renderLogistics();
+async function resetChecklist() {
+  showroomItems=SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
+  document.getElementById('showroom-notes').value='';
+  renderChecklist();
+  await window._saveDoc('dashboard/showroom',{items:showroomItems,notes:''});
 }
 
-function renderLogistics() {
-  document.getElementById('logistics-week').textContent = '· ' + getWeekLabel();
-  const wrap = document.getElementById('logistics-wrap');
-  wrap.innerHTML = LOGISTICS_SECTIONS.map(sec => {
-    const state = logisticsState[sec.id] || {};
-    const initials = state.initials || '';
-    const tasksHtml = sec.tasks.map(task => {
-      const days = state[task.id] || ['unchecked','unchecked','unchecked','unchecked','unchecked'];
-      let cellsHtml;
-      if (task.monthly) {
-        const s = days[0];
-        const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
-        const label = s === 'pass' ? '✓ Done' : s === 'fail' ? '✕ Issue' : 'Mark Done';
-        const color = s === 'pass' ? '#86efac' : s === 'fail' ? '#fca5a5' : '#64748b';
-        cellsHtml = `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',0)" style="width:90px;border-radius:8px;padding:0 10px" title="Click to toggle">
-          <span class="day-val" style="font-size:11px;font-weight:600;color:${color}">${label}</span>
-        </div>`;
-      } else {
-        cellsHtml = DAYS.map((d, i) => {
-          const s = days[i];
-          const cls = s === 'pass' ? 'pass' : s === 'fail' ? 'fail' : 'unknown';
-          const val = s === 'pass' ? '✓' : s === 'fail' ? '✕' : '·';
-          return `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',${i})" title="${['Mon','Tue','Wed','Thu','Fri'][i]}">
-            <span class="day-label">${d}</span>
-            <span class="day-val">${val}</span>
-          </div>`;
-        }).join('');
-      }
-      return `<div class="logistics-row${task.monthly?' monthly':''}">
-        <div class="logistics-task">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div>
-        <div class="day-cells">${cellsHtml}</div>
-      </div>`;
-    }).join('');
-    return `<div class="logistics-section">
-      <div class="logistics-section-header">
-        <span class="logistics-section-title">${sec.title}</span>
-        <div class="logistics-initials">
-          Initials: <input type="text" maxlength="5" value="${initials}" placeholder="JMS" oninput="logisticsState['${sec.id}'].initials=this.value">
-        </div>
-      </div>
-      ${tasksHtml}
-    </div>`;
+let showroomNoteTimer;
+function saveShowroomNotes() {
+  clearTimeout(showroomNoteTimer);
+  showroomNoteTimer = setTimeout(async()=>{
+    await window._saveDoc('dashboard/showroom',{notes:document.getElementById('showroom-notes').value});
+  },800);
+}
+
+function renderChecklist() {
+  document.getElementById('showroom-week').textContent='· '+getWeekLabel();
+  document.getElementById('showroom-grid').innerHTML=showroomItems.map(item=>{
+    const s=item.status,cls=s==='pass'?'pass':s==='fail'?'fail':'unknown',icon=s==='pass'?'✓':s==='fail'?'✕':'—',label=s==='pass'?'Pass':s==='fail'?'Fail':'Tap to check',lc=s==='pass'?'#86efac':s==='fail'?'#fca5a5':'#475569';
+    return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('${item.id}')"><div class="checklist-dot ${cls}">${icon}</div><div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div><div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div></div>`;
   }).join('');
 }
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
-// RMA TRACKER
+// LOGISTICS CHECKLIST — Firebase
 // ═══════════════════════════════════════════════════════════════════════════════
-let rmaData = [];
+const LOGISTICS_SECTIONS=[
+  {id:'fleet',title:'Fleet',tasks:[
+    {id:'fl1',text:'All tech vans inspected for tire pressure, glass cracks, and body damage. Exterior branding is clean and no visible maintenance codes (Oil, Brakes, Check Engine, etc.)',monthly:false},
+    {id:'fl2',text:'Service appointments made for any vehicle issues.',monthly:false},
+    {id:'fl3',text:'Inspect vinyl condition and overall exterior presentation of vehicles.',monthly:false},
+    {id:'fl4',text:'Van products, parts, and tools inventoried and adjusted as needed.',monthly:true},
+  ]},
+  {id:'inventory',title:'Inventory & Staging',tasks:[
+    {id:'in1',text:"All parts for the next day's projects are labeled and staged, ready to be loaded into the vans.",monthly:false},
+    {id:'in2',text:'Packages delivered checked against packing slips and received. Items for orders placed into appropriate staging area, items for stock placed onto appropriate shelves.',monthly:false},
+    {id:'in3',text:'Process any defective items for RMA return and reorder any necessary replacement parts.',monthly:false},
+    {id:'in4',text:'Organize and clean trash and debris from warehouse.',monthly:false},
+  ]},
+  {id:'facilities',title:'Facilities',tasks:[
+    {id:'fa1',text:'Be present at Morning Stand Up.',monthly:false},
+    {id:'fa2',text:'Exterior/Interior signs, lighting, HVAC, plumbing all working properly and shop floor clear of trip hazards. Entrances free of trash and debris. Trash checked and emptied.',monthly:false},
+    {id:'fa3',text:'All van keys are accounted for at the start/end of shift.',monthly:false},
+    {id:'fa4',text:'Racks are cool, cable management is tidy, UPS backups show "Green", OVRC cleared of unnecessary devices and labeled properly.',monthly:false},
+    {id:'fa5',text:'Fire extinguishers and first aid kits checked and restocked when necessary.',monthly:true},
+  ]},
+];
+const DAYS=['M','T','W','T','F'];
+let logisticsState={};
 
-document.addEventListener('DOMContentLoaded', () => {
-  const today = new Date().toISOString().split('T')[0];
-  const rmaDateEl = document.getElementById('rma-date');
-  if (rmaDateEl) rmaDateEl.value = today;
-});
-
-function addRMA() {
-  const client  = document.getElementById('rma-client').value.trim();
-  const vendor  = document.getElementById('rma-vendor').value.trim();
-  const item    = document.getElementById('rma-item').value.trim();
-  const number  = document.getElementById('rma-number').value.trim();
-  const date    = document.getElementById('rma-date').value;
-  const status  = document.getElementById('rma-status').value;
-
-  if (!vendor || !item) { alert('Please enter at least a vendor and item description.'); return; }
-
-  rmaData.push({ id: Date.now(), client, vendor, item, number, date, status, notes: '' });
-
-  document.getElementById('rma-client').value  = '';
-  document.getElementById('rma-vendor').value  = '';
-  document.getElementById('rma-item').value    = '';
-  document.getElementById('rma-number').value  = '';
-  document.getElementById('rma-status').value  = 'Submitted';
-
-  renderRMA();
+function initLogisticsState() {
+  logisticsState={};
+  LOGISTICS_SECTIONS.forEach(sec=>{
+    logisticsState[sec.id]={initials:''};
+    sec.tasks.forEach(t=>{ logisticsState[sec.id][t.id]=['unchecked','unchecked','unchecked','unchecked','unchecked']; });
+  });
 }
 
-function updateRMAStatus(id, val) {
-  const r = rmaData.find(r => r.id === id);
-  if (r) { r.status = val; renderRMA(); }
+function listenLogistics() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','logistics'), snap=>{
+      if(snap.exists()) {
+        const d=snap.data();
+        if(d.state) logisticsState=d.state;
+        if(d.notes) document.getElementById('logistics-notes').value=d.notes;
+        renderLogistics();
+      }
+    });
+  });
 }
 
-function updateRMANotes(id, val) {
-  const r = rmaData.find(r => r.id === id);
-  if (r) r.notes = val;
-}
-
-function removeRMA(id) {
-  rmaData = rmaData.filter(r => r.id !== id);
-  renderRMA();
-}
-
-function rmaBadgeClass(status) {
-  if (status === 'Submitted')          return 'badge-rma-submitted';
-  if (status === 'Pending Vendor')     return 'badge-rma-pending';
-  if (status === 'Replacement Ordered')return 'badge-rma-ordered';
-  if (status === 'Resolved')           return 'badge-rma-resolved';
-  return 'badge-rma-submitted';
-}
-
-function renderRMA() {
-  const open = rmaData.filter(r => r.status !== 'Resolved');
-  const count = open.length;
-  document.getElementById('rma-count').textContent = count > 0 ? `· ${count} open` : '';
-
-  const wrap = document.getElementById('rma-wrap');
-  if (rmaData.length === 0) {
-    wrap.innerHTML = '<div class="rma-empty">No open RMAs — add one above</div>';
-    return;
-  }
-
-  wrap.innerHTML = `<table>
-    <thead>
-      <tr>
-        <th>Client</th>
-        <th>Vendor</th>
-        <th>Item / Description</th>
-        <th>RMA #</th>
-        <th>Date Submitted</th>
-        <th>Status</th>
-        <th>Notes</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rmaData.map(r => `
-        <tr class="fade-in ${r.status === 'Resolved' ? 'row-received' : ''}">
-          <td><span class="project-name">${r.client || '<span style="opacity:0.3">—</span>'}</span></td>
-          <td><span class="vendor-name">${r.vendor}</span></td>
-          <td style="max-width:260px">${r.item}</td>
-          <td><span class="po-num">${r.number || '<span style="opacity:0.3">—</span>'}</span></td>
-          <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.date ? new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
-          <td>
-            <select onchange="updateRMAStatus(${r.id}, this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer">
-              ${['Submitted','Pending Vendor','Replacement Ordered','Resolved'].map(s =>
-                `<option value="${s}" ${s === r.status ? 'selected' : ''}>${s}</option>`
-              ).join('')}
-            </select>
-          </td>
-          <td><input type="text" value="${r.notes}" onchange="updateRMANotes(${r.id}, this.value)" placeholder="Add notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:100%;padding:2px 0;min-width:140px"></td>
-          <td><button onclick="removeRMA(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px" title="Remove">✕</button></td>
-        </tr>`).join('')}
-    </tbody>
-  </table>`;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// INVENTORY CHART
-// ═══════════════════════════════════════════════════════════════════════════════
-let inventoryEntries = []; // { date, inventory, staging }
-let invChart = null;
-
-// Set default date to today
-document.addEventListener('DOMContentLoaded', () => {
-  const d = new Date();
-  document.getElementById('inv-date').value = d.toISOString().split('T')[0];
-  renderChecklist('showroom');
-  initLogisticsState();
+async function toggleDayCell(secId,taskId,dayIdx) {
+  const cur=logisticsState[secId][taskId][dayIdx];
+  logisticsState[secId][taskId][dayIdx]=cur==='unchecked'?'pass':cur==='pass'?'fail':'unchecked';
   renderLogistics();
-});
+  await window._saveDoc('dashboard/logistics',{state:logisticsState});
+}
 
-function addInventoryEntry() {
-  const date = document.getElementById('inv-date').value;
-  const inv  = parseFloat(document.getElementById('inv-inventory').value);
-  const stg  = parseFloat(document.getElementById('inv-staging').value);
-  if (!date || isNaN(inv) || isNaN(stg)) {
-    alert('Please fill in date, inventory, and staging values.');
-    return;
-  }
-  inventoryEntries.push({ date, inventory: inv, staging: stg });
-  inventoryEntries.sort((a,b) => a.date.localeCompare(b.date));
-  document.getElementById('inv-inventory').value = '';
-  document.getElementById('inv-staging').value   = '';
-  // Advance date by 7 days for convenience
-  const next = new Date(date);
-  next.setDate(next.getDate() + 7);
-  document.getElementById('inv-date').value = next.toISOString().split('T')[0];
+async function resetLogistics() {
+  initLogisticsState();
+  document.getElementById('logistics-notes').value='';
+  renderLogistics();
+  await window._saveDoc('dashboard/logistics',{state:logisticsState,notes:''});
+}
+
+let logisticsNoteTimer;
+function saveLogisticsNotes() {
+  clearTimeout(logisticsNoteTimer);
+  logisticsNoteTimer=setTimeout(async()=>{
+    await window._saveDoc('dashboard/logistics',{notes:document.getElementById('logistics-notes').value});
+  },800);
+}
+
+function renderLogistics() {
+  document.getElementById('logistics-week').textContent='· '+getWeekLabel();
+  document.getElementById('logistics-wrap').innerHTML=LOGISTICS_SECTIONS.map(sec=>{
+    const state=logisticsState[sec.id]||{};
+    const tasksHtml=sec.tasks.map(task=>{
+      const days=state[task.id]||['unchecked','unchecked','unchecked','unchecked','unchecked'];
+      let cellsHtml;
+      if(task.monthly){
+        const s=days[0],cls=s==='pass'?'pass':s==='fail'?'fail':'unknown',label=s==='pass'?'✓ Done':s==='fail'?'✕ Issue':'Mark Done',color=s==='pass'?'#86efac':s==='fail'?'#fca5a5':'#64748b';
+        cellsHtml=`<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',0)" style="width:90px;border-radius:8px;padding:0 10px"><span class="day-val" style="font-size:11px;font-weight:600;color:${color}">${label}</span></div>`;
+      } else {
+        cellsHtml=DAYS.map((d,i)=>{const s=days[i],cls=s==='pass'?'pass':s==='fail'?'fail':'unknown',val=s==='pass'?'✓':s==='fail'?'✕':'·';return `<div class="day-cell ${cls}" onclick="toggleDayCell('${sec.id}','${task.id}',${i})" title="${['Mon','Tue','Wed','Thu','Fri'][i]}"><span class="day-label">${d}</span><span class="day-val">${val}</span></div>`;}).join('');
+      }
+      return `<div class="logistics-row${task.monthly?' monthly':''}"><div class="logistics-task">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div><div class="day-cells">${cellsHtml}</div></div>`;
+    }).join('');
+    return `<div class="logistics-section"><div class="logistics-section-header"><span class="logistics-section-title">${sec.title}</span><div class="logistics-initials">Initials: <input type="text" maxlength="5" value="${state.initials||''}" placeholder="JMS" oninput="updateInitials('${sec.id}',this.value)"></div></div>${tasksHtml}</div>`;
+  }).join('');
+}
+
+let initialsTimer;
+function updateInitials(secId, val) {
+  logisticsState[secId].initials=val;
+  clearTimeout(initialsTimer);
+  initialsTimer=setTimeout(async()=>{ await window._saveDoc('dashboard/logistics',{state:logisticsState}); },800);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INVENTORY CHART — Firebase
+// ═══════════════════════════════════════════════════════════════════════════════
+let inventoryEntries=[], invChart=null;
+
+function listenInventory() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','inventory'), snap=>{
+      if(snap.exists()&&snap.data().entries) { inventoryEntries=snap.data().entries; renderInventoryChart(); }
+    });
+  });
+}
+
+async function addInventoryEntry() {
+  const date=document.getElementById('inv-date').value, inv=parseFloat(document.getElementById('inv-inventory').value), stg=parseFloat(document.getElementById('inv-staging').value);
+  if(!date||isNaN(inv)||isNaN(stg)){alert('Please fill in all fields.');return;}
+  inventoryEntries.push({date,inventory:inv,staging:stg});
+  inventoryEntries.sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('inv-inventory').value=''; document.getElementById('inv-staging').value='';
+  const next=new Date(date); next.setDate(next.getDate()+7); document.getElementById('inv-date').value=next.toISOString().split('T')[0];
   renderInventoryChart();
+  await window._saveDoc('dashboard/inventory',{entries:inventoryEntries});
 }
 
-function clearLastEntry() {
-  if (inventoryEntries.length === 0) return;
-  inventoryEntries.pop();
-  renderInventoryChart();
+async function clearLastEntry() {
+  if(!inventoryEntries.length)return;
+  inventoryEntries.pop(); renderInventoryChart();
+  await window._saveDoc('dashboard/inventory',{entries:inventoryEntries});
 }
 
-function fmtMoney(n) {
-  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-}
+function fmtMoney(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
 function renderInventoryChart() {
-  const area = document.getElementById('chart-area');
-  const totals = document.getElementById('chart-totals');
-
-  if (inventoryEntries.length === 0) {
-    area.innerHTML = '<div class="no-chart-data">No entries yet — add your first inventory total above</div>';
-    totals.innerHTML = '';
-    if (invChart) { invChart.destroy(); invChart = null; }
-    return;
-  }
-
-  const latest = inventoryEntries[inventoryEntries.length - 1];
-  const combined = latest.inventory + latest.staging;
-  totals.innerHTML = `
-    <div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div>
-    <div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div>
-    <div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
-
-  const labels   = inventoryEntries.map(e => { const d = new Date(e.date+'T00:00:00'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); });
-  const invData  = inventoryEntries.map(e => e.inventory);
-  const stgData  = inventoryEntries.map(e => e.staging);
-  const combData = inventoryEntries.map(e => e.inventory + e.staging);
-
-  if (invChart) invChart.destroy();
-  area.innerHTML = '<canvas id="inv-chart"></canvas>';
-  const ctx = document.getElementById('inv-chart').getContext('2d');
-  invChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label:'Inventory',  data: invData,  borderColor:'#93c5fd', backgroundColor:'rgba(147,197,253,0.08)', pointBackgroundColor:'#93c5fd', tension:0.3, pointRadius:4 },
-        { label:'Staging',    data: stgData,  borderColor:'#86efac', backgroundColor:'rgba(134,239,172,0.08)', pointBackgroundColor:'#86efac', tension:0.3, pointRadius:4 },
-        { label:'Combined',   data: combData, borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.06)',  pointBackgroundColor:'#fbbf24', tension:0.3, pointRadius:4, borderDash:[4,3] },
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { color:'#94a3b8', font:{family:'DM Sans',size:12}, boxWidth:12, padding:20 } },
-        tooltip: {
-          backgroundColor:'#1c2333',
-          borderColor:'rgba(255,255,255,0.1)',
-          borderWidth:1,
-          titleColor:'#e2e8f0',
-          bodyColor:'#94a3b8',
-          callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.raw)}` }
-        }
-      },
-      scales: {
-        x: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}} },
-        y: { grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#64748b',font:{family:'DM Mono',size:11}, callback: v => '$'+Math.round(v/1000)+'K'} }
-      }
-    }
+  const area=document.getElementById('chart-area'), totals=document.getElementById('chart-totals');
+  if(!inventoryEntries.length){area.innerHTML='<div class="no-chart-data">No entries yet — add your first inventory total above</div>';totals.innerHTML='';if(invChart){invChart.destroy();invChart=null;}return;}
+  const latest=inventoryEntries[inventoryEntries.length-1], combined=latest.inventory+latest.staging;
+  totals.innerHTML=`<div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div><div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div><div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
+  const labels=inventoryEntries.map(e=>{const d=new Date(e.date+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
+  if(invChart)invChart.destroy();
+  area.innerHTML='<canvas id="inv-chart"></canvas>';
+  invChart=new Chart(document.getElementById('inv-chart').getContext('2d'),{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'Inventory',data:inventoryEntries.map(e=>e.inventory),borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.08)',pointBackgroundColor:'#93c5fd',tension:0.3,pointRadius:4},
+      {label:'Staging',data:inventoryEntries.map(e=>e.staging),borderColor:'#86efac',backgroundColor:'rgba(134,239,172,0.08)',pointBackgroundColor:'#86efac',tension:0.3,pointRadius:4},
+      {label:'Combined',data:inventoryEntries.map(e=>e.inventory+e.staging),borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,0.06)',pointBackgroundColor:'#fbbf24',tension:0.3,pointRadius:4,borderDash:[4,3]},
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#94a3b8',font:{family:'DM Sans',size:12},boxWidth:12,padding:20}},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${c.dataset.label}: ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11},callback:v=>'$'+Math.round(v/1000)+'K'}}}}
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SAVE & SHARE
+// RMA TRACKER — Firebase
 // ═══════════════════════════════════════════════════════════════════════════════
-function saveSnapshot() {
-  const timestamp = document.getElementById('last-updated').textContent;
-  const showroomNotes = document.getElementById('showroom-notes').value;
-  const logisticsNotes = document.getElementById('logistics-notes').value;
-  const payload = {
-    data: allData,
-    timestamp,
-    showroomItems,
-    showroomNotes,
-    inventoryEntries,
-    logisticsState,
-    logisticsNotes,
-    rmaData,
-  };
-  const dataScript = `\n<script id="preloaded-data">\n  window.__PRELOADED__ = ${JSON.stringify(payload)};\n<\/script>`;
-  const html = document.documentElement.outerHTML.replace('</head>', dataScript + '</head>');
-  const date = new Date().toLocaleDateString('en-US',{month:'2-digit',day:'2-digit',year:'numeric'}).replace(/\//g,'-');
-  const blob = new Blob([html], { type:'text/html' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `PortCity_Logistics_Dashboard_${date}.html`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+let rmaData=[];
+
+function listenRMA() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','rma'), snap=>{
+      if(snap.exists()&&snap.data().items){rmaData=snap.data().items;renderRMA();}
+    });
+  });
 }
 
-// ── Restore snapshot ─────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  if (window.__PRELOADED__) {
-    const p = window.__PRELOADED__;
-    allData = p.data || [];
-    document.getElementById('last-updated').textContent = p.timestamp || '';
-    document.getElementById('loaded-filename').textContent = 'Saved snapshot';
-    document.getElementById('drop-zone').classList.add('has-data');
-    document.getElementById('save-btn').style.display = 'flex';
-    updateKPIs();
-    renderTable();
-    if (p.showroomItems) showroomItems = p.showroomItems;
-    if (p.showroomNotes) document.getElementById('showroom-notes').value = p.showroomNotes;
-    if (p.inventoryEntries) { inventoryEntries = p.inventoryEntries; renderInventoryChart(); }
-    if (p.logisticsState) logisticsState = p.logisticsState;
-    if (p.rmaData) { rmaData = p.rmaData; renderRMA(); }
-    if (p.logisticsNotes) document.getElementById('logistics-notes').value = p.logisticsNotes;
-  }
-  renderChecklist('showroom');
+async function addRMA() {
+  const client=document.getElementById('rma-client').value.trim(), vendor=document.getElementById('rma-vendor').value.trim(), item=document.getElementById('rma-item').value.trim(), number=document.getElementById('rma-number').value.trim(), date=document.getElementById('rma-date').value, status=document.getElementById('rma-status').value;
+  if(!vendor||!item){alert('Please enter at least a vendor and item.');return;}
+  rmaData.push({id:Date.now(),client,vendor,item,number,date,status,notes:''});
+  document.getElementById('rma-client').value=''; document.getElementById('rma-vendor').value=''; document.getElementById('rma-item').value=''; document.getElementById('rma-number').value=''; document.getElementById('rma-status').value='Submitted';
+  renderRMA();
+  await window._saveDoc('dashboard/rma',{items:rmaData});
+}
+
+let rmaTimer;
+async function updateRMAStatus(id,val) { const r=rmaData.find(r=>r.id===id); if(r){r.status=val;renderRMA();await window._saveDoc('dashboard/rma',{items:rmaData});} }
+function updateRMANotes(id,val) { const r=rmaData.find(r=>r.id===id); if(r){r.notes=val;clearTimeout(rmaTimer);rmaTimer=setTimeout(async()=>{await window._saveDoc('dashboard/rma',{items:rmaData});},800);} }
+async function removeRMA(id) { rmaData=rmaData.filter(r=>r.id!==id); renderRMA(); await window._saveDoc('dashboard/rma',{items:rmaData}); }
+
+function renderRMA() {
+  const open=rmaData.filter(r=>r.status!=='Resolved').length;
+  document.getElementById('rma-count').textContent=open>0?`· ${open} open`:'';
+  const wrap=document.getElementById('rma-wrap');
+  if(!rmaData.length){wrap.innerHTML='<div class="rma-empty">No open RMAs — add one above</div>';return;}
+  wrap.innerHTML=`<table><thead><tr><th>Client</th><th>Vendor</th><th>Item / Description</th><th>RMA #</th><th>Date Submitted</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>${rmaData.map(r=>`<tr class="fade-in ${r.status==='Resolved'?'row-received':''}"><td><span class="project-name">${r.client||'<span style="opacity:0.3">—</span>'}</span></td><td><span class="vendor-name">${r.vendor}</span></td><td style="max-width:260px">${r.item}</td><td><span class="po-num">${r.number||'<span style="opacity:0.3">—</span>'}</span></td><td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.date?new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):'—'}</td><td><select onchange="updateRMAStatus(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer">${['Submitted','Pending Vendor','Replacement Ordered','Resolved'].map(s=>`<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}</select></td><td><input type="text" value="${r.notes}" oninput="updateRMANotes(${r.id},this.value)" placeholder="Add notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:100%;padding:2px 0;min-width:140px"></td><td><button onclick="removeRMA(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px">✕</button></td></tr>`).join('')}</tbody></table>`;
+}
+
+// Init on load
+window.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('inv-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('rma-date').value = new Date().toISOString().split('T')[0];
+  renderChecklist();
   initLogisticsState();
   renderLogistics();
-  if (window.__PRELOADED__ && window.__PRELOADED__.logisticsState) {
-    logisticsState = window.__PRELOADED__.logisticsState;
-    if (window.__PRELOADED__.logisticsNotes) document.getElementById('logistics-notes').value = window.__PRELOADED__.logisticsNotes;
-    renderLogistics();
-  }
+  renderRMA();
+  waitForFirebase(()=>{ listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); });
 });
 </script>
-
-</body></html>
+</body>
+</html>
