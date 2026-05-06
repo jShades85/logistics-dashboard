@@ -320,10 +320,7 @@ function renderInventoryChart() {
   totals.innerHTML=`<div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div><div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div><div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
   const labels=inventoryEntries.map(e=>{const d=new Date(e.date+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
   if(invChart)invChart.destroy();
-  area.innerHTML='<canvas id="inv-chart"></canvas>';
-  if (window._resizeObserver) window._resizeObserver.disconnect();
-  window._resizeObserver = new ResizeObserver(() => { if(invChart) invChart.resize(); });
-  window._resizeObserver.observe(document.getElementById('chart-area'));
+  area.innerHTML='<canvas id="inv-chart" style="width:100%!important"></canvas>';
   invChart=new Chart(document.getElementById('inv-chart').getContext('2d'),{
     type:'line',
     data:{labels,datasets:[
@@ -331,7 +328,7 @@ function renderInventoryChart() {
       {label:'Staging',data:inventoryEntries.map(e=>e.staging),borderColor:'#86efac',backgroundColor:'rgba(134,239,172,0.08)',pointBackgroundColor:'#86efac',tension:0.3,pointRadius:4},
       {label:'Combined',data:inventoryEntries.map(e=>e.inventory+e.staging),borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,0.06)',pointBackgroundColor:'#fbbf24',tension:0.3,pointRadius:4,borderDash:[4,3]},
     ]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{color:'#94a3b8',font:{family:'DM Sans',size:12},boxWidth:12,padding:20}},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${c.dataset.label}: ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11},callback:v=>'$'+Math.round(v/1000)+'K'}}}}
+    options:{responsive:true,maintainAspectRatio:true,onResize:(chart,size)=>{ chart.resize(); },plugins:{legend:{labels:{color:'#94a3b8',font:{family:'DM Sans',size:12},boxWidth:12,padding:20}},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${c.dataset.label}: ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11},callback:v=>'$'+Math.round(v/1000)+'K'}}}}
   });
 }
 
@@ -369,6 +366,13 @@ function renderRMA() {
   if(!rmaData.length){wrap.innerHTML='<div class="rma-empty">No open RMAs — add one above</div>';return;}
   wrap.innerHTML=`<table><thead><tr><th>Client</th><th>Vendor</th><th>Item / Description</th><th>RMA #</th><th>Date Submitted</th><th>Status</th><th>Notes</th><th></th></tr></thead><tbody>${rmaData.map(r=>`<tr class="fade-in ${r.status==='Resolved'?'row-received':''}"><td><span class="project-name">${r.client||'<span style="opacity:0.3">—</span>'}</span></td><td><span class="vendor-name">${r.vendor}</span></td><td style="max-width:260px">${r.item}</td><td><span class="po-num">${r.number||'<span style="opacity:0.3">—</span>'}</span></td><td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.date?new Date(r.date+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}):'—'}</td><td><select onchange="updateRMAStatus(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;cursor:pointer">${['Submitted','Pending Vendor','Replacement Ordered','Resolved'].map(s=>`<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}</select></td><td><input type="text" value="${r.notes}" oninput="updateRMANotes(${r.id},this.value)" placeholder="Add notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;width:100%;padding:2px 0;min-width:140px"></td><td><button onclick="removeRMA(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px">✕</button></td></tr>`).join('')}</tbody></table>`;
 }
+
+// Fix Chart.js resize
+window.addEventListener('resize', () => {
+  if (invChart) {
+    invChart.resize();
+  }
+});
 
 // Init on load
 window.addEventListener('DOMContentLoaded', ()=>{
