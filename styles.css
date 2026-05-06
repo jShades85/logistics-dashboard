@@ -1,5 +1,6 @@
 /* ── Port City Logistics Dashboard — Website Style ──────────────────────────── */
-:root {
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Karla:wght@300;400;500;600&family=Work+Sans:wght@400;500;600;700&display=swap');
+
   --bg:        #f5f6f8;
   --bg2:       #ffffff;
   --bg3:       #f9fafb;
@@ -24,7 +25,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Karla', sans-serif;
   font-size: 14px;
   min-height: 100vh;
   line-height: 1.5;
@@ -60,7 +61,7 @@ header {
   border: 1.5px solid rgba(255,255,255,0.4);
   border-radius: 999px;
   padding: 7px 18px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Karla', sans-serif;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -99,7 +100,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
 /* ── Section headers ────────────────────────────────────────────────────────*/
 .section-header { display: flex; align-items: center; justify-content: space-between; margin: 32px 0 14px; gap: 12px; }
 .section-title {
-  font-family: 'Syne', sans-serif;
+  font-family: 'Work Sans', sans-serif;
   font-size: 17px;
   font-weight: 700;
   color: var(--text);
@@ -124,7 +125,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   padding: 6px 14px;
   border-radius: 999px;
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Karla', sans-serif;
   font-weight: 500;
   transition: border-color 0.15s, color 0.15s;
   white-space: nowrap;
@@ -145,7 +146,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   color: var(--muted);
   cursor: pointer;
   transition: all 0.15s;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Karla', sans-serif;
 }
 .filter-btn:hover { border-color: var(--navy); color: var(--navy); }
 .filter-btn.active { background: var(--navy); border-color: var(--navy); color: var(--white); }
@@ -159,7 +160,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px; }
   padding: 7px 12px 7px 32px;
   font-size: 12px;
   color: var(--text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Karla', sans-serif;
   width: 220px;
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -216,7 +217,7 @@ tbody td { padding: 11px 16px; font-size: 13px; color: var(--text); vertical-ali
 
 #empty-state { text-align: center; padding: 80px 32px; }
 .empty-icon  { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
-.empty-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
+.empty-title { font-family: 'Work Sans', sans-serif; font-size: 20px; font-weight: 700; color: var(--muted); margin-bottom: 8px; }
 .empty-sub   { font-size: 13px; color: var(--muted); opacity: 0.7; }
 
 /* ── Checklists ─────────────────────────────────────────────────────────────*/
@@ -246,7 +247,7 @@ tbody td { padding: 11px 16px; font-size: 13px; color: var(--text); vertical-ali
 /* ── Notes box ──────────────────────────────────────────────────────────────*/
 .notes-box { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-bottom: 28px; }
 .notes-box label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 500; display: block; margin-bottom: 8px; }
-.notes-box textarea { width: 100%; background: transparent; border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: vertical; outline: none; min-height: 70px; line-height: 1.6; }
+.notes-box textarea { width: 100%; background: transparent; border: none; color: var(--text); font-family: 'Karla', sans-serif; font-size: 13px; resize: vertical; outline: none; min-height: 70px; line-height: 1.6; }
 .notes-box textarea::placeholder { color: var(--muted); opacity: 0.6; }
 
 /* ── Logistics checklist ────────────────────────────────────────────────────*/
@@ -283,7 +284,7 @@ tbody td { padding: 11px 16px; font-size: 13px; color: var(--text); vertical-ali
 .chart-field input { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Mono', monospace; width: 160px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
 .chart-field input:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0,98,164,0.1); }
 .chart-field input[type="date"] { width: 150px; color-scheme: light; }
-.add-entry-btn { background: var(--navy); color: white; border: none; border-radius: 999px; padding: 8px 18px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; align-self: flex-end; transition: background 0.15s; }
+.add-entry-btn { background: var(--navy); color: white; border: none; border-radius: 999px; padding: 8px 18px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Karla', sans-serif; align-self: flex-end; transition: background 0.15s; }
 .add-entry-btn:hover { background: var(--navy-dark); }
 .chart-totals { display: flex; gap: 24px; margin-bottom: 16px; flex-wrap: wrap; }
 .chart-total { font-size: 12px; color: var(--muted); }
@@ -297,7 +298,7 @@ canvas#inv-chart { max-height: 260px; }
 .rma-form { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 .rma-field { display: flex; flex-direction: column; gap: 4px; }
 .rma-field label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); font-weight: 500; }
-.rma-field input, .rma-field select { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.rma-field input, .rma-field select { background: var(--bg3); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 12px; font-size: 13px; color: var(--text); font-family: 'Karla', sans-serif; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
 .rma-field input:focus, .rma-field select:focus { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(0,98,164,0.1); }
 .rma-field input::placeholder { color: var(--muted); }
 .rma-field select option { background: var(--white); }
@@ -305,12 +306,12 @@ canvas#inv-chart { max-height: 260px; }
 .rma-field.narrow input { width: 130px; }
 .rma-field.date input   { width: 145px; color-scheme: light; }
 .rma-field.status select { width: 160px; }
-.rma-add-btn { background: var(--navy); color: white; border: none; border-radius: 999px; padding: 8px 18px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; align-self: flex-end; white-space: nowrap; transition: background 0.15s; }
+.rma-add-btn { background: var(--navy); color: white; border: none; border-radius: 999px; padding: 8px 18px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Karla', sans-serif; align-self: flex-end; white-space: nowrap; transition: background 0.15s; }
 .rma-add-btn:hover { background: var(--navy-dark); }
 .rma-empty { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
 .rma-count { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-left: 6px; }
-#rma-wrap select { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; cursor: pointer; }
-#rma-wrap input[type="text"] { background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 12px; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; padding: 2px 0; }
+#rma-wrap select { background: var(--bg3); border: 1px solid var(--border2); border-radius: 6px; padding: 3px 8px; font-size: 11px; color: var(--text); font-family: 'Karla', sans-serif; outline: none; cursor: pointer; }
+#rma-wrap input[type="text"] { background: transparent; border: none; border-bottom: 1px solid var(--border); color: var(--text); font-size: 12px; font-family: 'Karla', sans-serif; outline: none; width: 100%; padding: 2px 0; }
 #rma-wrap button { background: transparent; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 8px; transition: color 0.15s; }
 #rma-wrap button:hover { color: #dc2626; }
 
