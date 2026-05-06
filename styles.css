@@ -1,6 +1,7 @@
 /* ── Port City Logistics Dashboard — Website Style ──────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Karla:wght@300;400;500;600&family=Work+Sans:wght@400;500;600;700&display=swap');
 
+:root {
   --bg:        #f5f6f8;
   --bg2:       #ffffff;
   --bg3:       #f9fafb;
