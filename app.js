@@ -67,9 +67,13 @@ function formatDate(val) {
   return String(val);
 }
 function cleanProject(raw) {
-  if (!raw.trim()) return '';
-  let p = raw; if (p.includes(' : ')) p = p.split(' : ')[1];
-  return p.replace(/\s*\(PORT\s*-?\s*\d+\)\s*$/i,'').trim();
+  if (!raw || !String(raw).trim()) return '';
+  let p = String(raw).trim();
+  let client = '';
+  if (p.includes(' : ')) { const parts = p.split(' : '); client = parts[0].trim(); p = parts[1].trim(); }
+  p = p.replace(/\(PORT\s*-?\s*(\d+)\)/i, '($1)');
+  if (client) p = client + ' - ' + p;
+  return p.trim();
 }
 function trackingLink(raw) {
   if (!raw) return '<span style="opacity:0.3">—</span>';
