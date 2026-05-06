@@ -321,6 +321,9 @@ function renderInventoryChart() {
   const labels=inventoryEntries.map(e=>{const d=new Date(e.date+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
   if(invChart)invChart.destroy();
   area.innerHTML='<canvas id="inv-chart"></canvas>';
+  if (window._resizeObserver) window._resizeObserver.disconnect();
+  window._resizeObserver = new ResizeObserver(() => { if(invChart) invChart.resize(); });
+  window._resizeObserver.observe(document.getElementById('chart-area'));
   invChart=new Chart(document.getElementById('inv-chart').getContext('2d'),{
     type:'line',
     data:{labels,datasets:[
