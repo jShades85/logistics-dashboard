@@ -64,7 +64,10 @@ function processFile(file) {
 function formatDate(val) {
   if (!val) return '';
   if (typeof val === 'number') { const d = new Date(Math.round((val-25569)*86400*1000)); return d.toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}); }
-  return String(val);
+  const str = String(val).trim();
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) { const d = new Date(parseInt(match[1]),parseInt(match[2])-1,parseInt(match[3])); return d.toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}); }
+  return str;
 }
 function cleanProject(raw) {
   if (!raw || !String(raw).trim()) return '';
