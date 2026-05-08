@@ -11,24 +11,23 @@ function initDashboard() {
   renderLogistics();
   renderRMA();
 
-  // Listen to Firebase collections
   listenShowroom();
   listenLogistics();
   listenInventory();
   listenRMA();
+  listenShowroomHistory();
+  listenLogisticsHistory();
 }
 
-// Wait for Firebase module to expose globals
 function waitForFirebase(cb) {
   if (window._db) cb();
   else window.addEventListener('firebase-ready', cb);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PO DATA (local only — from D-Tools export)
+// PO DATA
 // ═══════════════════════════════════════════════════════════════════════════════
 let allData = [], currentFilter = 'All', showReceived = false, sortCol = 'Date', sortAsc = false;
-
 
 function handleFileInput(input) { if (input.files[0]) processFile(input.files[0]); }
 
@@ -134,6 +133,8 @@ const SHOWROOM_ITEMS = [
   {id:'theater',  area:'Theater Room',detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat'},
 ];
 let showroomItems = SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
+let showroomHistory = [];
+let showroomHistoryOpen = false;
 
 function getWeekLabel() {
   const now=new Date(), mon=new Date(now); mon.setDate(now.getDate()-((now.getDay()+6)%7));
@@ -162,6 +163,17 @@ function listenShowroom() {
   });
 }
 
+function listenShowroomHistory() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','showroom-history'), snap=>{
+      if(snap.exists()&&snap.data().entries) {
+        showroomHistory = snap.data().entries;
+        renderShowroomHistory();
+      }
+    });
+  });
+}
+
 async function toggleChecklistItem(id) {
   const item=showroomItems.find(i=>i.id===id); if(!item)return;
   item.status=item.status==='unchecked'?'pass':item.status==='pass'?'fail':'unchecked';
@@ -170,10 +182,30 @@ async function toggleChecklistItem(id) {
 }
 
 async function resetChecklist() {
+  // Snapshot current state to history before clearing
+  await archiveShowroomWeek();
+
   showroomItems=SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
   document.getElementById('showroom-notes').value='';
   renderChecklist();
   await window._saveDoc('dashboard/showroom',{items:showroomItems,notes:''});
+}
+
+async function archiveShowroomWeek() {
+  const notes = document.getElementById('showroom-notes').value;
+  const hasActivity = showroomItems.some(i => i.status !== 'unchecked') || notes.trim();
+  if (!hasActivity) return; // Don't archive blank weeks
+
+  const entry = {
+    weekLabel: getWeekLabel(),
+    timestamp: new Date().toISOString(),
+    items: showroomItems.map(i => ({id:i.id, area:i.area, detail:i.detail, status:i.status})),
+    notes: notes,
+  };
+
+  // Prepend new entry, keep last 12 weeks
+  const updated = [entry, ...showroomHistory].slice(0, 12);
+  await window._saveDoc('dashboard/showroom-history', { entries: updated });
 }
 
 let showroomNoteTimer;
@@ -189,6 +221,92 @@ function renderChecklist() {
   document.getElementById('showroom-grid').innerHTML=showroomItems.map(item=>{
     const s=item.status,cls=s==='pass'?'pass':s==='fail'?'fail':'unknown',icon=s==='pass'?'✓':s==='fail'?'✕':'—',label=s==='pass'?'Pass':s==='fail'?'Fail':'Tap to check',lc=s==='pass'?'#86efac':s==='fail'?'#fca5a5':'#475569';
     return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('${item.id}')"><div class="checklist-dot ${cls}">${icon}</div><div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div><div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div></div>`;
+  }).join('');
+}
+
+// ── Showroom history rendering ────────────────────────────────────────────────
+function toggleShowroomHistory() {
+  showroomHistoryOpen = !showroomHistoryOpen;
+  renderShowroomHistory();
+}
+
+function toggleShowroomEntry(idx) {
+  const body = document.getElementById(`sh-body-${idx}`);
+  const arrow = document.getElementById(`sh-arrow-${idx}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
+}
+
+function showroomEntrySummary(items) {
+  const pass = items.filter(i=>i.status==='pass').length;
+  const fail = items.filter(i=>i.status==='fail').length;
+  const skip = items.filter(i=>i.status==='unchecked').length;
+  const parts = [];
+  if (pass) parts.push(`<span style="color:#15803d;font-weight:600">✓ ${pass} Pass</span>`);
+  if (fail) parts.push(`<span style="color:#dc2626;font-weight:600">✕ ${fail} Fail</span>`);
+  if (skip) parts.push(`<span style="color:#888896">— ${skip} Not checked</span>`);
+  return parts.join('<span style="color:var(--border2);margin:0 6px">·</span>');
+}
+
+function renderShowroomHistory() {
+  const wrap = document.getElementById('showroom-history-wrap');
+  if (!wrap) return;
+
+  const btn = document.getElementById('showroom-history-btn');
+  if (btn) btn.textContent = showroomHistoryOpen
+    ? '▾ Hide History'
+    : `▸ View History${showroomHistory.length ? ` (${showroomHistory.length} week${showroomHistory.length>1?'s':''})` : ''}`;
+
+  if (!showroomHistoryOpen) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  if (!showroomHistory.length) {
+    wrap.innerHTML = '<div class="history-empty">No history yet — completed weeks will appear here after resetting.</div>';
+    return;
+  }
+
+  wrap.innerHTML = showroomHistory.map((entry, idx) => {
+    const hasFails = entry.items.some(i=>i.status==='fail');
+    const statusDot = hasFails
+      ? '<span style="color:#dc2626;font-size:10px">● Issues</span>'
+      : '<span style="color:#15803d;font-size:10px">● All Clear</span>';
+
+    const itemsHtml = entry.items.map(item => {
+      const s = item.status;
+      const icon = s==='pass'?'✓':s==='fail'?'✕':'—';
+      const cls  = s==='pass'?'pass':s==='fail'?'fail':'unknown';
+      return `<div class="history-checklist-row ${cls}">
+        <div class="checklist-dot ${cls}" style="width:22px;height:22px;font-size:11px;flex-shrink:0">${icon}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${item.area}</div>
+          <div style="font-size:11px;color:var(--muted)">${item.detail}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const notesHtml = entry.notes
+      ? `<div class="history-notes"><span class="history-notes-label">Notes</span>${entry.notes}</div>`
+      : '';
+
+    return `
+      <div class="history-entry">
+        <div class="history-entry-header" onclick="toggleShowroomEntry(${idx})">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="sh-arrow-${idx}" style="color:var(--muted);font-size:11px;width:10px">▸</span>
+            <span class="history-week-label">${entry.weekLabel}</span>
+            ${statusDot}
+          </div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <span style="font-size:11px;color:var(--muted)">${showroomEntrySummary(entry.items)}</span>
+          </div>
+        </div>
+        <div id="sh-body-${idx}" class="history-entry-body" style="display:none">
+          <div class="history-checklist-grid">${itemsHtml}</div>
+          ${notesHtml}
+        </div>
+      </div>`;
   }).join('');
 }
 
@@ -218,6 +336,8 @@ const LOGISTICS_SECTIONS=[
 ];
 const DAYS=['M','T','W','T','F'];
 let logisticsState={};
+let logisticsHistory = [];
+let logisticsHistoryOpen = false;
 
 function initLogisticsState() {
   logisticsState={};
@@ -240,6 +360,17 @@ function listenLogistics() {
   });
 }
 
+function listenLogisticsHistory() {
+  waitForFirebase(()=>{
+    window._onSnapshot(window._doc(window._db,'dashboard','logistics-history'), snap=>{
+      if(snap.exists()&&snap.data().entries) {
+        logisticsHistory = snap.data().entries;
+        renderLogisticsHistory();
+      }
+    });
+  });
+}
+
 async function toggleDayCell(secId,taskId,dayIdx) {
   const cur=logisticsState[secId][taskId][dayIdx];
   logisticsState[secId][taskId][dayIdx]=cur==='unchecked'?'pass':cur==='pass'?'fail':'unchecked';
@@ -248,10 +379,38 @@ async function toggleDayCell(secId,taskId,dayIdx) {
 }
 
 async function resetLogistics() {
+  await archiveLogisticsWeek();
+
   initLogisticsState();
   document.getElementById('logistics-notes').value='';
   renderLogistics();
   await window._saveDoc('dashboard/logistics',{state:logisticsState,notes:''});
+}
+
+async function archiveLogisticsWeek() {
+  const notes = document.getElementById('logistics-notes').value;
+
+  // Check if there's any activity worth saving
+  let hasActivity = notes.trim().length > 0;
+  if (!hasActivity) {
+    LOGISTICS_SECTIONS.forEach(sec => {
+      sec.tasks.forEach(t => {
+        const days = logisticsState[sec.id]?.[t.id] || [];
+        if (days.some(d => d !== 'unchecked')) hasActivity = true;
+      });
+    });
+  }
+  if (!hasActivity) return;
+
+  const entry = {
+    weekLabel: getWeekLabel(),
+    timestamp: new Date().toISOString(),
+    state: JSON.parse(JSON.stringify(logisticsState)), // deep clone
+    notes: notes,
+  };
+
+  const updated = [entry, ...logisticsHistory].slice(0, 12);
+  await window._saveDoc('dashboard/logistics-history', { entries: updated });
 }
 
 let logisticsNoteTimer;
@@ -286,6 +445,116 @@ function updateInitials(secId, val) {
   logisticsState[secId].initials=val;
   clearTimeout(initialsTimer);
   initialsTimer=setTimeout(async()=>{ await window._saveDoc('dashboard/logistics',{state:logisticsState}); },800);
+}
+
+// ── Logistics history rendering ───────────────────────────────────────────────
+function toggleLogisticsHistory() {
+  logisticsHistoryOpen = !logisticsHistoryOpen;
+  renderLogisticsHistory();
+}
+
+function toggleLogisticsEntry(idx) {
+  const body = document.getElementById(`lh-body-${idx}`);
+  const arrow = document.getElementById(`lh-arrow-${idx}`);
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
+}
+
+function logisticsEntrySummary(state) {
+  let pass=0, fail=0;
+  LOGISTICS_SECTIONS.forEach(sec => {
+    sec.tasks.forEach(t => {
+      const days = state[sec.id]?.[t.id] || [];
+      days.forEach(d => { if(d==='pass') pass++; else if(d==='fail') fail++; });
+    });
+  });
+  const parts = [];
+  if (pass) parts.push(`<span style="color:#15803d;font-weight:600">✓ ${pass} Pass</span>`);
+  if (fail) parts.push(`<span style="color:#dc2626;font-weight:600">✕ ${fail} Fail</span>`);
+  return parts.join('<span style="color:var(--border2);margin:0 6px">·</span>') || '<span style="color:var(--muted)">No activity</span>';
+}
+
+function renderLogisticsHistory() {
+  const wrap = document.getElementById('logistics-history-wrap');
+  if (!wrap) return;
+
+  const btn = document.getElementById('logistics-history-btn');
+  if (btn) btn.textContent = logisticsHistoryOpen
+    ? '▾ Hide History'
+    : `▸ View History${logisticsHistory.length ? ` (${logisticsHistory.length} week${logisticsHistory.length>1?'s':''})` : ''}`;
+
+  if (!logisticsHistoryOpen) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+
+  if (!logisticsHistory.length) {
+    wrap.innerHTML = '<div class="history-empty">No history yet — completed weeks will appear here after resetting.</div>';
+    return;
+  }
+
+  wrap.innerHTML = logisticsHistory.map((entry, idx) => {
+    const hasFails = LOGISTICS_SECTIONS.some(sec =>
+      sec.tasks.some(t => (entry.state[sec.id]?.[t.id]||[]).includes('fail'))
+    );
+    const statusDot = hasFails
+      ? '<span style="color:#dc2626;font-size:10px">● Issues</span>'
+      : '<span style="color:#15803d;font-size:10px">● All Clear</span>';
+
+    const sectionsHtml = LOGISTICS_SECTIONS.map(sec => {
+      const secState = entry.state[sec.id] || {};
+      const initials = secState.initials ? `<span class="history-initials-tag">${secState.initials}</span>` : '';
+
+      const tasksHtml = sec.tasks.map(task => {
+        const days = secState[task.id] || ['unchecked','unchecked','unchecked','unchecked','unchecked'];
+        let cellsHtml;
+        if (task.monthly) {
+          const s=days[0], cls=s==='pass'?'pass':s==='fail'?'fail':'unknown';
+          const label=s==='pass'?'✓ Done':s==='fail'?'✕ Issue':'—';
+          const color=s==='pass'?'#15803d':s==='fail'?'#dc2626':'#888896';
+          cellsHtml=`<div class="day-cell ${cls}" style="width:80px;pointer-events:none;border-radius:4px;padding:0 8px"><span class="day-val" style="font-size:10px;font-weight:600;color:${color}">${label}</span></div>`;
+        } else {
+          cellsHtml=DAYS.map((d,i)=>{
+            const s=days[i], cls=s==='pass'?'pass':s==='fail'?'fail':'unknown';
+            const val=s==='pass'?'✓':s==='fail'?'✕':'·';
+            return `<div class="day-cell ${cls}" style="pointer-events:none"><span class="day-label">${d}</span><span class="day-val">${val}</span></div>`;
+          }).join('');
+        }
+        return `<div class="logistics-row${task.monthly?' monthly':''}" style="padding:8px 12px">
+          <div class="logistics-task" style="font-size:11px">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div>
+          <div class="day-cells">${cellsHtml}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="history-logistics-section">
+        <div class="history-logistics-section-header">
+          <span class="logistics-section-title">${sec.title}</span>
+          ${initials}
+        </div>
+        ${tasksHtml}
+      </div>`;
+    }).join('');
+
+    const notesHtml = entry.notes
+      ? `<div class="history-notes"><span class="history-notes-label">Notes</span>${entry.notes}</div>`
+      : '';
+
+    return `
+      <div class="history-entry">
+        <div class="history-entry-header" onclick="toggleLogisticsEntry(${idx})">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="lh-arrow-${idx}" style="color:var(--muted);font-size:11px;width:10px">▸</span>
+            <span class="history-week-label">${entry.weekLabel}</span>
+            ${statusDot}
+          </div>
+          <div>${logisticsEntrySummary(entry.state)}</div>
+        </div>
+        <div id="lh-body-${idx}" class="history-entry-body" style="display:none">
+          ${sectionsHtml}
+          ${notesHtml}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -375,11 +644,7 @@ function renderRMA() {
 }
 
 // Fix Chart.js resize
-window.addEventListener('resize', () => {
-  if (invChart) {
-    invChart.resize();
-  }
-});
+window.addEventListener('resize', () => { if (invChart) invChart.resize(); });
 
 // Init on load
 window.addEventListener('DOMContentLoaded', ()=>{
@@ -389,5 +654,5 @@ window.addEventListener('DOMContentLoaded', ()=>{
   initLogisticsState();
   renderLogistics();
   renderRMA();
-  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); });
+  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); listenShowroomHistory(); listenLogisticsHistory(); });
 });
