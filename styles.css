@@ -739,3 +739,14 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   .modal-row { flex-direction: column; gap: 10px; }
   .modal-field.narrow, .modal-field.wide { flex: 1; min-width: 0; }
 }
+
+/* ── Map pin link ────────────────────────────────────────────────────────────*/
+.map-pin-link {
+  font-size: 13px;
+  text-decoration: none;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.map-pin-link:hover { opacity: 1; }

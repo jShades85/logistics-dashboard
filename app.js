@@ -669,7 +669,6 @@ function openContactModal(id) {
   document.getElementById('contact-modal-title').textContent = id ? 'Edit Contact' : 'Add Contact';
   document.getElementById('cm-name').value    = c?.name    || '';
   document.getElementById('cm-type').value    = c?.type    || 'Repair Shop';
-  document.getElementById('cm-contact').value = c?.contact || '';
   document.getElementById('cm-phone').value   = c?.phone   || '';
   document.getElementById('cm-address').value = c?.address || '';
   document.getElementById('cm-notes').value   = c?.notes   || '';
@@ -688,7 +687,6 @@ async function saveContact() {
     id:      contactModalId || Date.now(),
     name,
     type:    document.getElementById('cm-type').value,
-    contact: document.getElementById('cm-contact').value.trim(),
     phone:   document.getElementById('cm-phone').value.trim(),
     address: document.getElementById('cm-address').value.trim(),
     notes:   document.getElementById('cm-notes').value.trim(),
@@ -734,9 +732,8 @@ function renderContacts() {
             <span class="contact-name">${c.name}</span>
             <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
           </div>
-          ${c.contact ? `<div class="contact-row"><span class="contact-label">Contact</span><span>${c.contact}</span></div>` : ''}
           ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
-          ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span style="font-size:12px;color:var(--muted)">${c.address}</span></div>` : ''}
+          ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span style="font-size:12px;color:var(--muted)">${c.address}</span><a href="https://www.google.com/maps/search/${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps">📍</a></div>` : ''}
           ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
           <div class="contact-actions">
             <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
