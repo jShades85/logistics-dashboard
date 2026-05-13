@@ -469,7 +469,6 @@ function renderFleetCards() {
     const vehicleLabel = [v.number ? `#${v.number}` : '', v.year, v.make, v.model].filter(Boolean).join(' ');
     return `
     <div class="fleet-card fade-in">
-      ${v.photo ? `<div class="fleet-card-photo"><img src="${v.photo}" alt="${v.name}"></div>` : '<div class="fleet-card-photo no-photo"><span>🚐</span></div>'}
       <div class="fleet-card-inner">
         <div class="fleet-card-header">
           <div>
@@ -510,46 +509,11 @@ function openVehicleModal(id) {
   document.getElementById('fm-registration').value = v?.registration || '';
   document.getElementById('fm-tiresize').value     = v?.tiresize     || '';
   document.getElementById('fm-notes').value        = v?.notes        || '';
-  // Photo
-  const preview = document.getElementById('fm-photo-preview');
-  const placeholder = document.getElementById('photo-upload-placeholder');
-  const clearBtn = document.getElementById('fm-photo-clear');
-  if (v?.photo) {
-    preview.src = v.photo; preview.style.display = 'block';
-    placeholder.style.display = 'none'; clearBtn.style.display = 'inline-flex';
-  } else {
-    preview.src = ''; preview.style.display = 'none';
-    placeholder.style.display = 'flex'; clearBtn.style.display = 'none';
-  }
-  document.getElementById('fm-photo-input').value = '';
   document.getElementById('fleet-modal').style.display = 'flex';
 }
 
-function handlePhotoUpload(input) {
-  if (!input.files[0]) return;
-  const file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB. Try a smaller image.'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const preview = document.getElementById('fm-photo-preview');
-    const placeholder = document.getElementById('photo-upload-placeholder');
-    preview.src = e.target.result;
-    preview.style.display = 'block';
-    placeholder.style.display = 'none';
-    document.getElementById('fm-photo-clear').style.display = 'inline-flex';
-    // Reset so same file can be re-selected if needed
-    input.value = '';
-  };
-  reader.readAsDataURL(file);
-}
 
-function clearPhoto() {
-  document.getElementById('fm-photo-preview').src = '';
-  document.getElementById('fm-photo-preview').style.display = 'none';
-  document.getElementById('photo-upload-placeholder').style.display = 'flex';
-  document.getElementById('fm-photo-clear').style.display = 'none';
-  document.getElementById('fm-photo-input').value = '';
-}
+
 
 function closeVehicleModal() {
   document.getElementById('fleet-modal').style.display = 'none';
@@ -557,13 +521,8 @@ function closeVehicleModal() {
 }
 
 async function saveVehicle() {
-  const name  = document.getElementById('fm-name').value.trim();
+  const name = document.getElementById('fm-name').value.trim();
   if (!name) { alert('Assigned technician is required.'); return; }
-  const photoPreview = document.getElementById('fm-photo-preview');
-  const existingVehicle = fleetModalId ? fleetData.find(v => v.id === fleetModalId) : null;
-  const photo = photoPreview.style.display !== 'none' && photoPreview.src
-    ? photoPreview.src
-    : (existingVehicle?.photo && photoPreview.style.display !== 'none' ? existingVehicle.photo : '');
   const vehicle = {
     id:           fleetModalId || Date.now(),
     number:       document.getElementById('fm-number').value.trim(),
@@ -577,7 +536,6 @@ async function saveVehicle() {
     registration: document.getElementById('fm-registration').value,
     tiresize:     document.getElementById('fm-tiresize').value.trim(),
     notes:        document.getElementById('fm-notes').value.trim(),
-    photo:        photoPreview.src && photoPreview.style.display !== 'none' ? photoPreview.src : '',
   };
   if (fleetModalId) {
     const idx = fleetData.findIndex(v => v.id === fleetModalId);
