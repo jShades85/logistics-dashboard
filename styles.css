@@ -375,15 +375,43 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
 }
 .fleet-card {
   background: var(--white);
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
   transition: background 0.15s;
   position: relative;
 }
 .fleet-card:hover { background: var(--bg3); }
+
+/* Photo area */
+.fleet-card-photo {
+  width: 100%;
+  height: 140px;
+  overflow: hidden;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.fleet-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.fleet-card-photo.no-photo {
+  font-size: 40px;
+  opacity: 0.15;
+}
+
+.fleet-card-inner {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
 .fleet-card-header {
   display: flex;
   align-items: flex-start;
@@ -396,6 +424,19 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   font-weight: 700;
   color: var(--text);
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.fleet-num-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--navy);
+  background: var(--navy-light);
+  padding: 1px 6px;
+  border-left: 2px solid var(--navy);
 }
 .fleet-service-badge {
   background: #fef2f2;
@@ -404,7 +445,7 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   border-left: 2px solid #dc2626;
   border-radius: 2px;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 2px 8px;
   white-space: nowrap;
   text-transform: uppercase;
@@ -412,42 +453,49 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   flex-shrink: 0;
 }
 .fleet-card-ymm {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted);
   font-style: italic;
+  margin-top: 2px;
+}
+.fleet-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .fleet-card-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 12px;
 }
+/* Fix: was 9px Karla (muddy) — now 10px Work Sans bold */
 .fleet-card-label {
-  font-size: 9px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--muted);
+  font-family: 'Work Sans', sans-serif;
+  font-size: 10px;
   font-weight: 600;
-  width: 44px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  width: 40px;
   flex-shrink: 0;
 }
-.fleet-card-val { color: var(--text); }
+.fleet-card-val { color: var(--text); font-size: 12px; }
 .fleet-card-val.mono { font-family: 'DM Mono', monospace; font-size: 11px; }
-.fleet-card-val.vin  { font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
+.fleet-card-val.vin  { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.5px; }
 .fleet-card-notes {
   font-size: 11px;
   color: var(--muted);
   font-style: italic;
-  border-top: 1px solid var(--border);
-  padding-top: 8px;
-  margin-top: 2px;
 }
 .fleet-card-actions {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: auto;
   padding-top: 10px;
-  border-top: 1px solid var(--border);
 }
 .fleet-action-btn {
   background: var(--navy);
@@ -462,6 +510,7 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   text-transform: uppercase;
   letter-spacing: 0.5px;
   transition: background 0.15s;
+  white-space: nowrap;
 }
 .fleet-action-btn:hover { background: var(--navy-dark); }
 .fleet-action-btn.ghost {
@@ -475,8 +524,32 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   color: var(--muted);
   border: 1px solid var(--border2);
   margin-left: auto;
+  padding: 5px 10px;
 }
 .fleet-action-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #ef4444; }
+
+/* Photo upload widget in modal */
+.photo-upload-wrap {
+  width: 100%;
+  height: 160px;
+  background: var(--bg3);
+  border: 2px dashed var(--border2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s;
+  overflow: hidden;
+  position: relative;
+}
+.photo-upload-wrap:hover { border-color: var(--navy); }
+.photo-upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
 
 /* ── Registration badges ─────────────────────────────────────────────────────*/
 .reg-badge {

@@ -459,23 +459,37 @@ function renderFleetCards() {
     grid.innerHTML = '<div class="fleet-empty">No vehicles added yet — click <strong>+ Add Vehicle</strong> to get started</div>';
     return;
   }
-  grid.innerHTML = fleetData.map(v => {
+  // Sort by vehicle number if present
+  const sorted = [...fleetData].sort((a,b) => {
+    const an = parseInt(a.number) || 999, bn = parseInt(b.number) || 999;
+    return an - bn;
+  });
+  grid.innerHTML = sorted.map(v => {
     const open = serviceData.filter(s => s.vehicleId === v.id && s.status !== 'Resolved').length;
+    const vehicleLabel = [v.number ? `#${v.number}` : '', v.year, v.make, v.model].filter(Boolean).join(' ');
     return `
-    <div class="fleet-card fade-in" onclick="openVehicleModal(${v.id})">
-      <div class="fleet-card-header">
-        <div class="fleet-card-name">${v.name}</div>
-        ${open > 0 ? `<span class="fleet-service-badge">${open} open</span>` : ''}
-      </div>
-      <div class="fleet-card-ymm">${v.year || '—'} ${v.make || ''} ${v.model || ''}</div>
-      <div class="fleet-card-row"><span class="fleet-card-label">Plate</span><span class="fleet-card-val mono">${v.plate || '—'}</span></div>
-      <div class="fleet-card-row"><span class="fleet-card-label">VIN</span><span class="fleet-card-val mono vin">${v.vin ? v.vin.toUpperCase() : '—'}</span></div>
-      <div class="fleet-card-row reg-row"><span class="fleet-card-label">Reg. Exp.</span>${regBadge(v.registration)}</div>
-      ${v.notes ? `<div class="fleet-card-notes">${v.notes}</div>` : ''}
-      <div class="fleet-card-actions" onclick="event.stopPropagation()">
-        <button class="fleet-action-btn" onclick="openServiceModal(${v.id})">+ Service Request</button>
-        <button class="fleet-action-btn ghost" onclick="openVehicleModal(${v.id})">Edit</button>
-        <button class="fleet-action-btn danger" onclick="removeVehicle(${v.id})">✕</button>
+    <div class="fleet-card fade-in">
+      ${v.photo ? `<div class="fleet-card-photo"><img src="${v.photo}" alt="${v.name}"></div>` : '<div class="fleet-card-photo no-photo"><span>🚐</span></div>'}
+      <div class="fleet-card-inner">
+        <div class="fleet-card-header">
+          <div>
+            <div class="fleet-card-name">${v.name || '—'}${v.number ? `<span class="fleet-num-tag">#${v.number}</span>` : ''}</div>
+            <div class="fleet-card-ymm">${[v.year, v.make, v.model].filter(Boolean).join(' ') || '—'}</div>
+          </div>
+          ${open > 0 ? `<span class="fleet-service-badge">${open} open</span>` : ''}
+        </div>
+        <div class="fleet-card-details">
+          <div class="fleet-card-row"><span class="fleet-card-label">Plate</span><span class="fleet-card-val mono">${v.plate || '—'}</span></div>
+          <div class="fleet-card-row"><span class="fleet-card-label">VIN</span><span class="fleet-card-val vin">${v.vin ? v.vin.toUpperCase() : '—'}</span></div>
+          ${v.tiresize ? `<div class="fleet-card-row"><span class="fleet-card-label">Tires</span><span class="fleet-card-val mono">${v.tiresize}</span></div>` : ''}
+          <div class="fleet-card-row reg-row"><span class="fleet-card-label">Reg.</span>${regBadge(v.registration)}</div>
+        </div>
+        ${v.notes ? `<div class="fleet-card-notes">${v.notes}</div>` : ''}
+        <div class="fleet-card-actions">
+          <button class="fleet-action-btn" onclick="openServiceModal(${v.id})">+ Service Request</button>
+          <button class="fleet-action-btn ghost" onclick="openVehicleModal(${v.id})">Edit</button>
+          <button class="fleet-action-btn danger" onclick="removeVehicle(${v.id})">✕</button>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -486,6 +500,7 @@ function openVehicleModal(id) {
   fleetModalId = id || null;
   const v = id ? fleetData.find(v => v.id === id) : {};
   document.getElementById('fleet-modal-title').textContent = id ? 'Edit Vehicle' : 'Add Vehicle';
+  document.getElementById('fm-number').value       = v?.number       || '';
   document.getElementById('fm-name').value         = v?.name         || '';
   document.getElementById('fm-year').value         = v?.year         || '';
   document.getElementById('fm-make').value         = v?.make         || '';
@@ -494,8 +509,45 @@ function openVehicleModal(id) {
   document.getElementById('fm-plate').value        = v?.plate        || '';
   document.getElementById('fm-vin').value          = v?.vin          || '';
   document.getElementById('fm-registration').value = v?.registration || '';
+  document.getElementById('fm-tiresize').value     = v?.tiresize     || '';
   document.getElementById('fm-notes').value        = v?.notes        || '';
+  // Photo
+  const preview = document.getElementById('fm-photo-preview');
+  const placeholder = document.getElementById('photo-upload-placeholder');
+  const clearBtn = document.getElementById('fm-photo-clear');
+  if (v?.photo) {
+    preview.src = v.photo; preview.style.display = 'block';
+    placeholder.style.display = 'none'; clearBtn.style.display = 'inline-flex';
+  } else {
+    preview.src = ''; preview.style.display = 'none';
+    placeholder.style.display = 'flex'; clearBtn.style.display = 'none';
+  }
+  document.getElementById('fm-photo-input').value = '';
   document.getElementById('fleet-modal').style.display = 'flex';
+}
+
+function handlePhotoUpload(input) {
+  if (!input.files[0]) return;
+  const file = input.files[0];
+  if (file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB. Try a smaller image.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('fm-photo-preview');
+    const placeholder = document.getElementById('photo-upload-placeholder');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    placeholder.style.display = 'none';
+    document.getElementById('fm-photo-clear').style.display = 'inline-flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPhoto() {
+  document.getElementById('fm-photo-preview').src = '';
+  document.getElementById('fm-photo-preview').style.display = 'none';
+  document.getElementById('photo-upload-placeholder').style.display = 'flex';
+  document.getElementById('fm-photo-clear').style.display = 'none';
+  document.getElementById('fm-photo-input').value = '';
 }
 
 function closeVehicleModal() {
@@ -505,9 +557,15 @@ function closeVehicleModal() {
 
 async function saveVehicle() {
   const name  = document.getElementById('fm-name').value.trim();
-  if (!name) { alert('Vehicle name is required.'); return; }
+  if (!name) { alert('Assigned technician is required.'); return; }
+  const photoPreview = document.getElementById('fm-photo-preview');
+  const existingVehicle = fleetModalId ? fleetData.find(v => v.id === fleetModalId) : null;
+  const photo = photoPreview.style.display !== 'none' && photoPreview.src
+    ? photoPreview.src
+    : (existingVehicle?.photo && photoPreview.style.display !== 'none' ? existingVehicle.photo : '');
   const vehicle = {
     id:           fleetModalId || Date.now(),
+    number:       document.getElementById('fm-number').value.trim(),
     name,
     year:         document.getElementById('fm-year').value.trim(),
     make:         document.getElementById('fm-make').value.trim(),
@@ -516,7 +574,9 @@ async function saveVehicle() {
     plate:        document.getElementById('fm-plate').value.trim().toUpperCase(),
     vin:          document.getElementById('fm-vin').value.trim().toUpperCase(),
     registration: document.getElementById('fm-registration').value,
+    tiresize:     document.getElementById('fm-tiresize').value.trim(),
     notes:        document.getElementById('fm-notes').value.trim(),
+    photo:        photoPreview.src && photoPreview.style.display !== 'none' ? photoPreview.src : '',
   };
   if (fleetModalId) {
     const idx = fleetData.findIndex(v => v.id === fleetModalId);
