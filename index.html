@@ -210,15 +210,18 @@
       </div>
       <div class="modal-field" style="width:100%">
         <label>Vehicle Photo</label>
-        <div class="photo-upload-wrap" id="photo-upload-wrap" onclick="document.getElementById('fm-photo-input').click()">
-          <img id="fm-photo-preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:0">
-          <div id="photo-upload-placeholder" class="photo-upload-placeholder">
-            <span style="font-size:24px">📷</span>
-            <span style="font-size:11px;color:var(--muted)">Click to upload photo</span>
+        <div class="photo-preview-wrap" id="photo-preview-wrap">
+          <img id="fm-photo-preview" src="" alt="" style="display:none;width:100%;height:160px;object-fit:cover;">
+          <div id="photo-upload-placeholder" class="photo-upload-placeholder" style="display:flex">
+            <span style="font-size:20px;opacity:0.4">📷</span>
+            <span style="font-size:11px;color:var(--muted)">No photo uploaded</span>
           </div>
         </div>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <label for="fm-photo-input" class="rma-add-btn" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px">📷 Upload Photo</label>
+          <button class="ghost-btn" id="fm-photo-clear" onclick="clearPhoto()" style="display:none">✕ Remove</button>
+        </div>
         <input type="file" id="fm-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
-        <button class="ghost-btn" id="fm-photo-clear" onclick="clearPhoto()" style="display:none;margin-top:6px;font-size:10px">✕ Remove Photo</button>
       </div>
       <div class="modal-field" style="width:100%"><label>Notes</label><input type="text" id="fm-notes" placeholder="Any notes about this vehicle…"></div>
     </div>

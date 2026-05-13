@@ -486,7 +486,6 @@ function renderFleetCards() {
         </div>
         ${v.notes ? `<div class="fleet-card-notes">${v.notes}</div>` : ''}
         <div class="fleet-card-actions">
-          <button class="fleet-action-btn" onclick="openServiceModal(${v.id})">+ Service Request</button>
           <button class="fleet-action-btn ghost" onclick="openVehicleModal(${v.id})">Edit</button>
           <button class="fleet-action-btn danger" onclick="removeVehicle(${v.id})">✕</button>
         </div>
@@ -527,9 +526,10 @@ function openVehicleModal(id) {
 }
 
 function handlePhotoUpload(input) {
+function handlePhotoUpload(input) {
   if (!input.files[0]) return;
   const file = input.files[0];
-  if (file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB. Try a smaller image.'); return; }
+  if (file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB. Try a smaller image.'); input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     const preview = document.getElementById('fm-photo-preview');
@@ -538,6 +538,8 @@ function handlePhotoUpload(input) {
     preview.style.display = 'block';
     placeholder.style.display = 'none';
     document.getElementById('fm-photo-clear').style.display = 'inline-flex';
+    // Reset so same file can be re-selected if needed
+    input.value = '';
   };
   reader.readAsDataURL(file);
 }

@@ -472,13 +472,13 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   gap: 10px;
   font-size: 12px;
 }
-/* Fix: was 9px Karla (muddy) — now 10px Work Sans bold */
+/* Fix: DM Mono renders cleanly at small sizes — Work Sans was muddy here */
 .fleet-card-label {
-  font-family: 'Work Sans', sans-serif;
+  font-family: 'DM Mono', monospace;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
   color: var(--muted);
   width: 40px;
   flex-shrink: 0;
@@ -528,27 +528,20 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
 }
 .fleet-action-btn.danger:hover { background: #fef2f2; color: #dc2626; border-color: #ef4444; }
 
-/* Photo upload widget in modal */
-.photo-upload-wrap {
+/* Photo preview in modal */
+.photo-preview-wrap {
   width: 100%;
-  height: 160px;
   background: var(--bg3);
-  border: 2px dashed var(--border2);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: border-color 0.15s;
+  border: 1px solid var(--border2);
   overflow: hidden;
-  position: relative;
 }
-.photo-upload-wrap:hover { border-color: var(--navy); }
 .photo-upload-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  pointer-events: none;
+  height: 80px;
 }
 
 /* ── Registration badges ─────────────────────────────────────────────────────*/
