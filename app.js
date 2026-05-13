@@ -11,23 +11,24 @@ function initDashboard() {
   renderLogistics();
   renderRMA();
 
+  // Listen to Firebase collections
   listenShowroom();
   listenLogistics();
   listenInventory();
   listenRMA();
-  listenShowroomHistory();
-  listenLogisticsHistory();
 }
 
+// Wait for Firebase module to expose globals
 function waitForFirebase(cb) {
   if (window._db) cb();
   else window.addEventListener('firebase-ready', cb);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PO DATA
+// PO DATA (local only — from D-Tools export)
 // ═══════════════════════════════════════════════════════════════════════════════
 let allData = [], currentFilter = 'All', showReceived = false, sortCol = 'Date', sortAsc = false;
+
 
 function handleFileInput(input) { if (input.files[0]) processFile(input.files[0]); }
 
@@ -133,8 +134,6 @@ const SHOWROOM_ITEMS = [
   {id:'theater',  area:'Theater Room',detail:'Rack / Control Device / Projector / Sound / Lights / Thermostat'},
 ];
 let showroomItems = SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
-let showroomHistory = [];
-let showroomHistoryOpen = false;
 
 function getWeekLabel() {
   const now=new Date(), mon=new Date(now); mon.setDate(now.getDate()-((now.getDay()+6)%7));
@@ -163,17 +162,6 @@ function listenShowroom() {
   });
 }
 
-function listenShowroomHistory() {
-  waitForFirebase(()=>{
-    window._onSnapshot(window._doc(window._db,'dashboard','showroom-history'), snap=>{
-      if(snap.exists()&&snap.data().entries) {
-        showroomHistory = snap.data().entries;
-        renderShowroomHistory();
-      }
-    });
-  });
-}
-
 async function toggleChecklistItem(id) {
   const item=showroomItems.find(i=>i.id===id); if(!item)return;
   item.status=item.status==='unchecked'?'pass':item.status==='pass'?'fail':'unchecked';
@@ -182,30 +170,10 @@ async function toggleChecklistItem(id) {
 }
 
 async function resetChecklist() {
-  // Snapshot current state to history before clearing
-  await archiveShowroomWeek();
-
   showroomItems=SHOWROOM_ITEMS.map(i=>({...i,status:'unchecked'}));
   document.getElementById('showroom-notes').value='';
   renderChecklist();
   await window._saveDoc('dashboard/showroom',{items:showroomItems,notes:''});
-}
-
-async function archiveShowroomWeek() {
-  const notes = document.getElementById('showroom-notes').value;
-  const hasActivity = showroomItems.some(i => i.status !== 'unchecked') || notes.trim();
-  if (!hasActivity) return; // Don't archive blank weeks
-
-  const entry = {
-    weekLabel: getWeekLabel(),
-    timestamp: new Date().toISOString(),
-    items: showroomItems.map(i => ({id:i.id, area:i.area, detail:i.detail, status:i.status})),
-    notes: notes,
-  };
-
-  // Prepend new entry, keep last 12 weeks
-  const updated = [entry, ...showroomHistory].slice(0, 12);
-  await window._saveDoc('dashboard/showroom-history', { entries: updated });
 }
 
 let showroomNoteTimer;
@@ -221,92 +189,6 @@ function renderChecklist() {
   document.getElementById('showroom-grid').innerHTML=showroomItems.map(item=>{
     const s=item.status,cls=s==='pass'?'pass':s==='fail'?'fail':'unknown',icon=s==='pass'?'✓':s==='fail'?'✕':'—',label=s==='pass'?'Pass':s==='fail'?'Fail':'Tap to check',lc=s==='pass'?'#86efac':s==='fail'?'#fca5a5':'#475569';
     return `<div class="checklist-item ${cls}" onclick="toggleChecklistItem('${item.id}')"><div class="checklist-dot ${cls}">${icon}</div><div style="flex:1"><div class="checklist-name">${item.area}</div><div class="checklist-sub">${item.detail}</div></div><div style="font-size:11px;font-weight:600;color:${lc};white-space:nowrap">${label}</div></div>`;
-  }).join('');
-}
-
-// ── Showroom history rendering ────────────────────────────────────────────────
-function toggleShowroomHistory() {
-  showroomHistoryOpen = !showroomHistoryOpen;
-  renderShowroomHistory();
-}
-
-function toggleShowroomEntry(idx) {
-  const body = document.getElementById(`sh-body-${idx}`);
-  const arrow = document.getElementById(`sh-arrow-${idx}`);
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
-}
-
-function showroomEntrySummary(items) {
-  const pass = items.filter(i=>i.status==='pass').length;
-  const fail = items.filter(i=>i.status==='fail').length;
-  const skip = items.filter(i=>i.status==='unchecked').length;
-  const parts = [];
-  if (pass) parts.push(`<span style="color:#15803d;font-weight:600">✓ ${pass} Pass</span>`);
-  if (fail) parts.push(`<span style="color:#dc2626;font-weight:600">✕ ${fail} Fail</span>`);
-  if (skip) parts.push(`<span style="color:#888896">— ${skip} Not checked</span>`);
-  return parts.join('<span style="color:var(--border2);margin:0 6px">·</span>');
-}
-
-function renderShowroomHistory() {
-  const wrap = document.getElementById('showroom-history-wrap');
-  if (!wrap) return;
-
-  const btn = document.getElementById('showroom-history-btn');
-  if (btn) btn.textContent = showroomHistoryOpen
-    ? '▾ Hide History'
-    : `▸ View History${showroomHistory.length ? ` (${showroomHistory.length} week${showroomHistory.length>1?'s':''})` : ''}`;
-
-  if (!showroomHistoryOpen) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
-
-  if (!showroomHistory.length) {
-    wrap.innerHTML = '<div class="history-empty">No history yet — completed weeks will appear here after resetting.</div>';
-    return;
-  }
-
-  wrap.innerHTML = showroomHistory.map((entry, idx) => {
-    const hasFails = entry.items.some(i=>i.status==='fail');
-    const statusDot = hasFails
-      ? '<span style="color:#dc2626;font-size:10px">● Issues</span>'
-      : '<span style="color:#15803d;font-size:10px">● All Clear</span>';
-
-    const itemsHtml = entry.items.map(item => {
-      const s = item.status;
-      const icon = s==='pass'?'✓':s==='fail'?'✕':'—';
-      const cls  = s==='pass'?'pass':s==='fail'?'fail':'unknown';
-      return `<div class="history-checklist-row ${cls}">
-        <div class="checklist-dot ${cls}" style="width:22px;height:22px;font-size:11px;flex-shrink:0">${icon}</div>
-        <div>
-          <div style="font-size:12px;font-weight:700;color:var(--text)">${item.area}</div>
-          <div style="font-size:11px;color:var(--muted)">${item.detail}</div>
-        </div>
-      </div>`;
-    }).join('');
-
-    const notesHtml = entry.notes
-      ? `<div class="history-notes"><span class="history-notes-label">Notes</span>${entry.notes}</div>`
-      : '';
-
-    return `
-      <div class="history-entry">
-        <div class="history-entry-header" onclick="toggleShowroomEntry(${idx})">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span id="sh-arrow-${idx}" style="color:var(--muted);font-size:11px;width:10px">▸</span>
-            <span class="history-week-label">${entry.weekLabel}</span>
-            ${statusDot}
-          </div>
-          <div style="display:flex;align-items:center;gap:16px">
-            <span style="font-size:11px;color:var(--muted)">${showroomEntrySummary(entry.items)}</span>
-          </div>
-        </div>
-        <div id="sh-body-${idx}" class="history-entry-body" style="display:none">
-          <div class="history-checklist-grid">${itemsHtml}</div>
-          ${notesHtml}
-        </div>
-      </div>`;
   }).join('');
 }
 
@@ -336,8 +218,6 @@ const LOGISTICS_SECTIONS=[
 ];
 const DAYS=['M','T','W','T','F'];
 let logisticsState={};
-let logisticsHistory = [];
-let logisticsHistoryOpen = false;
 
 function initLogisticsState() {
   logisticsState={};
@@ -360,17 +240,6 @@ function listenLogistics() {
   });
 }
 
-function listenLogisticsHistory() {
-  waitForFirebase(()=>{
-    window._onSnapshot(window._doc(window._db,'dashboard','logistics-history'), snap=>{
-      if(snap.exists()&&snap.data().entries) {
-        logisticsHistory = snap.data().entries;
-        renderLogisticsHistory();
-      }
-    });
-  });
-}
-
 async function toggleDayCell(secId,taskId,dayIdx) {
   const cur=logisticsState[secId][taskId][dayIdx];
   logisticsState[secId][taskId][dayIdx]=cur==='unchecked'?'pass':cur==='pass'?'fail':'unchecked';
@@ -379,38 +248,10 @@ async function toggleDayCell(secId,taskId,dayIdx) {
 }
 
 async function resetLogistics() {
-  await archiveLogisticsWeek();
-
   initLogisticsState();
   document.getElementById('logistics-notes').value='';
   renderLogistics();
   await window._saveDoc('dashboard/logistics',{state:logisticsState,notes:''});
-}
-
-async function archiveLogisticsWeek() {
-  const notes = document.getElementById('logistics-notes').value;
-
-  // Check if there's any activity worth saving
-  let hasActivity = notes.trim().length > 0;
-  if (!hasActivity) {
-    LOGISTICS_SECTIONS.forEach(sec => {
-      sec.tasks.forEach(t => {
-        const days = logisticsState[sec.id]?.[t.id] || [];
-        if (days.some(d => d !== 'unchecked')) hasActivity = true;
-      });
-    });
-  }
-  if (!hasActivity) return;
-
-  const entry = {
-    weekLabel: getWeekLabel(),
-    timestamp: new Date().toISOString(),
-    state: JSON.parse(JSON.stringify(logisticsState)), // deep clone
-    notes: notes,
-  };
-
-  const updated = [entry, ...logisticsHistory].slice(0, 12);
-  await window._saveDoc('dashboard/logistics-history', { entries: updated });
 }
 
 let logisticsNoteTimer;
@@ -445,116 +286,6 @@ function updateInitials(secId, val) {
   logisticsState[secId].initials=val;
   clearTimeout(initialsTimer);
   initialsTimer=setTimeout(async()=>{ await window._saveDoc('dashboard/logistics',{state:logisticsState}); },800);
-}
-
-// ── Logistics history rendering ───────────────────────────────────────────────
-function toggleLogisticsHistory() {
-  logisticsHistoryOpen = !logisticsHistoryOpen;
-  renderLogisticsHistory();
-}
-
-function toggleLogisticsEntry(idx) {
-  const body = document.getElementById(`lh-body-${idx}`);
-  const arrow = document.getElementById(`lh-arrow-${idx}`);
-  if (!body) return;
-  const isOpen = body.style.display !== 'none';
-  body.style.display = isOpen ? 'none' : 'block';
-  if (arrow) arrow.textContent = isOpen ? '▸' : '▾';
-}
-
-function logisticsEntrySummary(state) {
-  let pass=0, fail=0;
-  LOGISTICS_SECTIONS.forEach(sec => {
-    sec.tasks.forEach(t => {
-      const days = state[sec.id]?.[t.id] || [];
-      days.forEach(d => { if(d==='pass') pass++; else if(d==='fail') fail++; });
-    });
-  });
-  const parts = [];
-  if (pass) parts.push(`<span style="color:#15803d;font-weight:600">✓ ${pass} Pass</span>`);
-  if (fail) parts.push(`<span style="color:#dc2626;font-weight:600">✕ ${fail} Fail</span>`);
-  return parts.join('<span style="color:var(--border2);margin:0 6px">·</span>') || '<span style="color:var(--muted)">No activity</span>';
-}
-
-function renderLogisticsHistory() {
-  const wrap = document.getElementById('logistics-history-wrap');
-  if (!wrap) return;
-
-  const btn = document.getElementById('logistics-history-btn');
-  if (btn) btn.textContent = logisticsHistoryOpen
-    ? '▾ Hide History'
-    : `▸ View History${logisticsHistory.length ? ` (${logisticsHistory.length} week${logisticsHistory.length>1?'s':''})` : ''}`;
-
-  if (!logisticsHistoryOpen) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
-
-  if (!logisticsHistory.length) {
-    wrap.innerHTML = '<div class="history-empty">No history yet — completed weeks will appear here after resetting.</div>';
-    return;
-  }
-
-  wrap.innerHTML = logisticsHistory.map((entry, idx) => {
-    const hasFails = LOGISTICS_SECTIONS.some(sec =>
-      sec.tasks.some(t => (entry.state[sec.id]?.[t.id]||[]).includes('fail'))
-    );
-    const statusDot = hasFails
-      ? '<span style="color:#dc2626;font-size:10px">● Issues</span>'
-      : '<span style="color:#15803d;font-size:10px">● All Clear</span>';
-
-    const sectionsHtml = LOGISTICS_SECTIONS.map(sec => {
-      const secState = entry.state[sec.id] || {};
-      const initials = secState.initials ? `<span class="history-initials-tag">${secState.initials}</span>` : '';
-
-      const tasksHtml = sec.tasks.map(task => {
-        const days = secState[task.id] || ['unchecked','unchecked','unchecked','unchecked','unchecked'];
-        let cellsHtml;
-        if (task.monthly) {
-          const s=days[0], cls=s==='pass'?'pass':s==='fail'?'fail':'unknown';
-          const label=s==='pass'?'✓ Done':s==='fail'?'✕ Issue':'—';
-          const color=s==='pass'?'#15803d':s==='fail'?'#dc2626':'#888896';
-          cellsHtml=`<div class="day-cell ${cls}" style="width:80px;pointer-events:none;border-radius:4px;padding:0 8px"><span class="day-val" style="font-size:10px;font-weight:600;color:${color}">${label}</span></div>`;
-        } else {
-          cellsHtml=DAYS.map((d,i)=>{
-            const s=days[i], cls=s==='pass'?'pass':s==='fail'?'fail':'unknown';
-            const val=s==='pass'?'✓':s==='fail'?'✕':'·';
-            return `<div class="day-cell ${cls}" style="pointer-events:none"><span class="day-label">${d}</span><span class="day-val">${val}</span></div>`;
-          }).join('');
-        }
-        return `<div class="logistics-row${task.monthly?' monthly':''}" style="padding:8px 12px">
-          <div class="logistics-task" style="font-size:11px">${task.text}${task.monthly?'<span class="monthly-tag">Monthly</span>':''}</div>
-          <div class="day-cells">${cellsHtml}</div>
-        </div>`;
-      }).join('');
-
-      return `<div class="history-logistics-section">
-        <div class="history-logistics-section-header">
-          <span class="logistics-section-title">${sec.title}</span>
-          ${initials}
-        </div>
-        ${tasksHtml}
-      </div>`;
-    }).join('');
-
-    const notesHtml = entry.notes
-      ? `<div class="history-notes"><span class="history-notes-label">Notes</span>${entry.notes}</div>`
-      : '';
-
-    return `
-      <div class="history-entry">
-        <div class="history-entry-header" onclick="toggleLogisticsEntry(${idx})">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span id="lh-arrow-${idx}" style="color:var(--muted);font-size:11px;width:10px">▸</span>
-            <span class="history-week-label">${entry.weekLabel}</span>
-            ${statusDot}
-          </div>
-          <div>${logisticsEntrySummary(entry.state)}</div>
-        </div>
-        <div id="lh-body-${idx}" class="history-entry-body" style="display:none">
-          ${sectionsHtml}
-          ${notesHtml}
-        </div>
-      </div>`;
-  }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -644,7 +375,11 @@ function renderRMA() {
 }
 
 // Fix Chart.js resize
-window.addEventListener('resize', () => { if (invChart) invChart.resize(); });
+window.addEventListener('resize', () => {
+  if (invChart) {
+    invChart.resize();
+  }
+});
 
 // Init on load
 window.addEventListener('DOMContentLoaded', ()=>{
@@ -654,5 +389,349 @@ window.addEventListener('DOMContentLoaded', ()=>{
   initLogisticsState();
   renderLogistics();
   renderRMA();
-  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); listenShowroomHistory(); listenLogisticsHistory(); });
+  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); listenFleet(); });
+});
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLEET HUB — Firebase
+// ═══════════════════════════════════════════════════════════════════════════════
+let fleetData = [], serviceData = [], contactsData = [];
+let fleetModalId = null; // vehicle being edited in modal
+
+// ── Registration badge helper ─────────────────────────────────────────────────
+function regBadge(expDate) {
+  if (!expDate) return '<span class="reg-badge reg-none">No Date</span>';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp   = new Date(expDate + 'T00:00:00');
+  const days  = Math.round((exp - today) / 86400000);
+  const label = exp.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+  if (days < 0)  return `<span class="reg-badge reg-expired">EXPIRED · ${label}</span>`;
+  if (days <= 30) return `<span class="reg-badge reg-red">Exp. ${label}</span>`;
+  if (days <= 60) return `<span class="reg-badge reg-yellow">Exp. ${label}</span>`;
+  return `<span class="reg-badge reg-green">${label}</span>`;
+}
+
+function regDaysUntil(expDate) {
+  if (!expDate) return Infinity;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const exp   = new Date(expDate + 'T00:00:00');
+  return Math.round((exp - today) / 86400000);
+}
+
+// ── Registration alert banner ─────────────────────────────────────────────────
+function renderRegBanner() {
+  const banner = document.getElementById('fleet-reg-banner');
+  const urgent = fleetData.filter(v => regDaysUntil(v.registration) <= 60);
+  if (!urgent.length) { banner.style.display = 'none'; return; }
+  banner.style.display = 'block';
+  banner.innerHTML = `<span class="reg-banner-icon">⚠</span> <strong>Registration Alert:</strong> ` +
+    urgent.map(v => {
+      const d = regDaysUntil(v.registration);
+      return `<span class="reg-banner-item ${d < 0 ? 'expired' : d <= 30 ? 'soon' : 'upcoming'}">${v.name} ${d < 0 ? '(EXPIRED)' : `(${d}d)`}</span>`;
+    }).join('  ·  ');
+}
+
+// ── Fleet listeners ───────────────────────────────────────────────────────────
+function listenFleet() {
+  waitForFirebase(() => {
+    window._onSnapshot(window._doc(window._db, 'dashboard', 'fleet'), snap => {
+      if (snap.exists() && snap.data().vehicles) fleetData = snap.data().vehicles;
+      renderFleetCards();
+      renderRegBanner();
+      renderServiceRequests();
+    });
+    window._onSnapshot(window._doc(window._db, 'dashboard', 'service'), snap => {
+      if (snap.exists() && snap.data().requests) serviceData = snap.data().requests;
+      renderFleetCards();
+      renderServiceRequests();
+    });
+    window._onSnapshot(window._doc(window._db, 'dashboard', 'contacts'), snap => {
+      if (snap.exists() && snap.data().contacts) contactsData = snap.data().contacts;
+      renderContacts();
+      renderServiceRequests(); // re-render so vendor dropdowns update
+    });
+  });
+}
+
+// ── Fleet cards ───────────────────────────────────────────────────────────────
+function renderFleetCards() {
+  const grid = document.getElementById('fleet-grid');
+  if (!fleetData.length) {
+    grid.innerHTML = '<div class="fleet-empty">No vehicles added yet — click <strong>+ Add Vehicle</strong> to get started</div>';
+    return;
+  }
+  grid.innerHTML = fleetData.map(v => {
+    const open = serviceData.filter(s => s.vehicleId === v.id && s.status !== 'Resolved').length;
+    return `
+    <div class="fleet-card fade-in" onclick="openVehicleModal(${v.id})">
+      <div class="fleet-card-header">
+        <div class="fleet-card-name">${v.name}</div>
+        ${open > 0 ? `<span class="fleet-service-badge">${open} open</span>` : ''}
+      </div>
+      <div class="fleet-card-ymm">${v.year || '—'} ${v.make || ''} ${v.model || ''}</div>
+      <div class="fleet-card-row"><span class="fleet-card-label">Plate</span><span class="fleet-card-val mono">${v.plate || '—'}</span></div>
+      <div class="fleet-card-row"><span class="fleet-card-label">VIN</span><span class="fleet-card-val mono vin">${v.vin ? v.vin.toUpperCase() : '—'}</span></div>
+      <div class="fleet-card-row reg-row"><span class="fleet-card-label">Reg. Exp.</span>${regBadge(v.registration)}</div>
+      ${v.notes ? `<div class="fleet-card-notes">${v.notes}</div>` : ''}
+      <div class="fleet-card-actions" onclick="event.stopPropagation()">
+        <button class="fleet-action-btn" onclick="openServiceModal(${v.id})">+ Service Request</button>
+        <button class="fleet-action-btn ghost" onclick="openVehicleModal(${v.id})">Edit</button>
+        <button class="fleet-action-btn danger" onclick="removeVehicle(${v.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Vehicle modal (add / edit) ─────────────────────────────────────────────────
+function openVehicleModal(id) {
+  fleetModalId = id || null;
+  const v = id ? fleetData.find(v => v.id === id) : {};
+  document.getElementById('fleet-modal-title').textContent = id ? 'Edit Vehicle' : 'Add Vehicle';
+  document.getElementById('fm-name').value         = v?.name         || '';
+  document.getElementById('fm-year').value         = v?.year         || '';
+  document.getElementById('fm-make').value         = v?.make         || '';
+  document.getElementById('fm-model').value        = v?.model        || '';
+  document.getElementById('fm-color').value        = v?.color        || '';
+  document.getElementById('fm-plate').value        = v?.plate        || '';
+  document.getElementById('fm-vin').value          = v?.vin          || '';
+  document.getElementById('fm-registration').value = v?.registration || '';
+  document.getElementById('fm-notes').value        = v?.notes        || '';
+  document.getElementById('fleet-modal').style.display = 'flex';
+}
+
+function closeVehicleModal() {
+  document.getElementById('fleet-modal').style.display = 'none';
+  fleetModalId = null;
+}
+
+async function saveVehicle() {
+  const name  = document.getElementById('fm-name').value.trim();
+  if (!name) { alert('Vehicle name is required.'); return; }
+  const vehicle = {
+    id:           fleetModalId || Date.now(),
+    name,
+    year:         document.getElementById('fm-year').value.trim(),
+    make:         document.getElementById('fm-make').value.trim(),
+    model:        document.getElementById('fm-model').value.trim(),
+    color:        document.getElementById('fm-color').value.trim(),
+    plate:        document.getElementById('fm-plate').value.trim().toUpperCase(),
+    vin:          document.getElementById('fm-vin').value.trim().toUpperCase(),
+    registration: document.getElementById('fm-registration').value,
+    notes:        document.getElementById('fm-notes').value.trim(),
+  };
+  if (fleetModalId) {
+    const idx = fleetData.findIndex(v => v.id === fleetModalId);
+    if (idx >= 0) fleetData[idx] = vehicle; else fleetData.push(vehicle);
+  } else {
+    fleetData.push(vehicle);
+  }
+  closeVehicleModal();
+  renderFleetCards(); renderRegBanner();
+  await window._saveDoc('dashboard/fleet', { vehicles: fleetData });
+}
+
+async function removeVehicle(id) {
+  if (!confirm('Remove this vehicle? This cannot be undone.')) return;
+  fleetData = fleetData.filter(v => v.id !== id);
+  serviceData = serviceData.filter(s => s.vehicleId !== id);
+  renderFleetCards(); renderRegBanner(); renderServiceRequests();
+  await window._saveDoc('dashboard/fleet', { vehicles: fleetData });
+  await window._saveDoc('dashboard/service', { requests: serviceData });
+}
+
+// ── Service request modal ──────────────────────────────────────────────────────
+function openServiceModal(vehicleId) {
+  document.getElementById('sr-vehicle').value = vehicleId || '';
+  // populate vehicle dropdown
+  const sel = document.getElementById('sr-vehicle');
+  sel.innerHTML = fleetData.map(v => `<option value="${v.id}" ${v.id === vehicleId ? 'selected' : ''}>${v.name}</option>`).join('');
+  // populate vendor dropdown
+  const vsel = document.getElementById('sr-vendor');
+  vsel.innerHTML = '<option value="">— None —</option>' + contactsData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+  document.getElementById('sr-issue').value = '';
+  document.getElementById('sr-date-scheduled').value = '';
+  document.getElementById('sr-notes').value = '';
+  document.getElementById('sr-status').value = 'Pending';
+  document.getElementById('service-modal').style.display = 'flex';
+}
+
+function closeServiceModal() {
+  document.getElementById('service-modal').style.display = 'none';
+}
+
+async function saveServiceRequest() {
+  const vehicleId = parseInt(document.getElementById('sr-vehicle').value);
+  const issue     = document.getElementById('sr-issue').value.trim();
+  if (!vehicleId || !issue) { alert('Please select a vehicle and describe the issue.'); return; }
+  const vehicle   = fleetData.find(v => v.id === vehicleId);
+  const vendorId  = parseInt(document.getElementById('sr-vendor').value) || null;
+  const vendor    = vendorId ? contactsData.find(c => c.id === vendorId) : null;
+  const today     = new Date().toISOString().split('T')[0];
+  serviceData.push({
+    id:            Date.now(),
+    vehicleId,
+    vehicleName:   vehicle?.name || '',
+    issue,
+    status:        document.getElementById('sr-status').value,
+    vendorId,
+    vendorName:    vendor?.name || '',
+    dateSubmitted: today,
+    dateScheduled: document.getElementById('sr-date-scheduled').value,
+    notes:         document.getElementById('sr-notes').value.trim(),
+  });
+  closeServiceModal();
+  renderFleetCards(); renderServiceRequests();
+  await window._saveDoc('dashboard/service', { requests: serviceData });
+}
+
+// ── Service requests list ──────────────────────────────────────────────────────
+function renderServiceRequests() {
+  const open = serviceData.filter(s => s.status !== 'Resolved').length;
+  document.getElementById('service-count').textContent = open > 0 ? `· ${open} open` : '';
+  const wrap = document.getElementById('service-wrap');
+  if (!serviceData.length) { wrap.innerHTML = '<div class="rma-empty">No service requests yet</div>'; return; }
+  wrap.innerHTML = `<table><thead><tr>
+    <th>Vehicle</th><th>Issue</th><th>Status</th><th>Vendor</th>
+    <th>Submitted</th><th>Scheduled</th><th>Notes</th><th></th>
+  </tr></thead><tbody>${serviceData.map(r => {
+    const statusColors = { 'Pending':'badge-draft','Scheduled':'badge-issued','In Progress':'badge-partial','Resolved':'badge-received' };
+    const vendorOpts = ['','...contactsData...'].join(''); // built inline below
+    const vOpts = '<option value="">— None —</option>' + contactsData.map(c => `<option value="${c.id}" ${c.id === r.vendorId ? 'selected' : ''}>${c.name}</option>`).join('');
+    return `<tr class="fade-in ${r.status==='Resolved'?'row-received':''}">
+      <td><span class="vendor-name">${r.vehicleName}</span></td>
+      <td style="max-width:220px;font-size:12px">${r.issue}</td>
+      <td>
+        <select onchange="updateServiceStatus(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'Karla',sans-serif;outline:none;cursor:pointer">
+          ${['Pending','Scheduled','In Progress','Resolved'].map(s=>`<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <select onchange="updateServiceVendor(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'Karla',sans-serif;outline:none;cursor:pointer;max-width:140px">
+          ${vOpts}
+        </select>
+      </td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.dateSubmitted ? new Date(r.dateSubmitted+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.dateScheduled ? new Date(r.dateScheduled+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
+      <td><input type="text" value="${r.notes||''}" oninput="updateServiceNotes(${r.id},this.value)" placeholder="Notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Karla',sans-serif;outline:none;width:100%;padding:2px 0;min-width:130px"></td>
+      <td><button onclick="removeService(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px;transition:color 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted)'">✕</button></td>
+    </tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+let serviceTimer;
+async function updateServiceStatus(id, val) {
+  const r = serviceData.find(r => r.id === id); if (!r) return;
+  r.status = val; renderFleetCards(); renderServiceRequests();
+  await window._saveDoc('dashboard/service', { requests: serviceData });
+}
+async function updateServiceVendor(id, val) {
+  const r = serviceData.find(r => r.id === id); if (!r) return;
+  const vendorId = parseInt(val) || null;
+  const vendor = vendorId ? contactsData.find(c => c.id === vendorId) : null;
+  r.vendorId = vendorId; r.vendorName = vendor?.name || '';
+  await window._saveDoc('dashboard/service', { requests: serviceData });
+}
+function updateServiceNotes(id, val) {
+  const r = serviceData.find(r => r.id === id); if (!r) return;
+  r.notes = val; clearTimeout(serviceTimer);
+  serviceTimer = setTimeout(async () => { await window._saveDoc('dashboard/service', { requests: serviceData }); }, 800);
+}
+async function removeService(id) {
+  serviceData = serviceData.filter(r => r.id !== id);
+  renderFleetCards(); renderServiceRequests();
+  await window._saveDoc('dashboard/service', { requests: serviceData });
+}
+
+// ── Contacts ──────────────────────────────────────────────────────────────────
+let contactModalId = null;
+
+function openContactModal(id) {
+  contactModalId = id || null;
+  const c = id ? contactsData.find(c => c.id === id) : {};
+  document.getElementById('contact-modal-title').textContent = id ? 'Edit Contact' : 'Add Contact';
+  document.getElementById('cm-name').value    = c?.name    || '';
+  document.getElementById('cm-type').value    = c?.type    || 'Repair Shop';
+  document.getElementById('cm-contact').value = c?.contact || '';
+  document.getElementById('cm-phone').value   = c?.phone   || '';
+  document.getElementById('cm-address').value = c?.address || '';
+  document.getElementById('cm-notes').value   = c?.notes   || '';
+  document.getElementById('contact-modal').style.display = 'flex';
+}
+
+function closeContactModal() {
+  document.getElementById('contact-modal').style.display = 'none';
+  contactModalId = null;
+}
+
+async function saveContact() {
+  const name = document.getElementById('cm-name').value.trim();
+  if (!name) { alert('Business name is required.'); return; }
+  const contact = {
+    id:      contactModalId || Date.now(),
+    name,
+    type:    document.getElementById('cm-type').value,
+    contact: document.getElementById('cm-contact').value.trim(),
+    phone:   document.getElementById('cm-phone').value.trim(),
+    address: document.getElementById('cm-address').value.trim(),
+    notes:   document.getElementById('cm-notes').value.trim(),
+  };
+  if (contactModalId) {
+    const idx = contactsData.findIndex(c => c.id === contactModalId);
+    if (idx >= 0) contactsData[idx] = contact; else contactsData.push(contact);
+  } else {
+    contactsData.push(contact);
+  }
+  closeContactModal();
+  renderContacts(); renderServiceRequests();
+  await window._saveDoc('dashboard/contacts', { contacts: contactsData });
+}
+
+async function removeContact(id) {
+  if (!confirm('Remove this contact?')) return;
+  contactsData = contactsData.filter(c => c.id !== id);
+  renderContacts(); renderServiceRequests();
+  await window._saveDoc('dashboard/contacts', { contacts: contactsData });
+}
+
+const CONTACT_TYPE_COLORS = {
+  'Repair Shop': { bg:'#eff6ff', fg:'#1d4ed8', border:'#0062a4' },
+  'Vinyl / Graphics': { bg:'#fdf4ff', fg:'#7e22ce', border:'#a855f7' },
+  'Tires': { bg:'#fff7ed', fg:'#c2410c', border:'#f97316' },
+  'Glass': { bg:'#f0fdf4', fg:'#15803d', border:'#22c55e' },
+  'Other': { bg:'#f5f6f8', fg:'#888896', border:'#d0d5dd' },
+};
+
+function renderContacts() {
+  const wrap = document.getElementById('contacts-wrap');
+  if (!contactsData.length) { wrap.innerHTML = '<div class="rma-empty">No contacts yet — add one above</div>'; return; }
+  const byType = {};
+  contactsData.forEach(c => { if (!byType[c.type]) byType[c.type] = []; byType[c.type].push(c); });
+  wrap.innerHTML = Object.entries(byType).map(([type, contacts]) => {
+    const col = CONTACT_TYPE_COLORS[type] || CONTACT_TYPE_COLORS['Other'];
+    return `<div class="contacts-group">
+      <div class="contacts-group-label" style="color:${col.fg}">${type}</div>
+      <div class="contacts-grid">${contacts.map(c => `
+        <div class="contact-card fade-in">
+          <div class="contact-card-header">
+            <span class="contact-name">${c.name}</span>
+            <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
+          </div>
+          ${c.contact ? `<div class="contact-row"><span class="contact-label">Contact</span><span>${c.contact}</span></div>` : ''}
+          ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
+          ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span style="font-size:12px;color:var(--muted)">${c.address}</span></div>` : ''}
+          ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
+          <div class="contact-actions">
+            <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
+            <button class="fleet-action-btn danger" onclick="removeContact(${c.id})">✕</button>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Close modals on backdrop click
+document.addEventListener('click', e => {
+  if (e.target.id === 'fleet-modal')   closeVehicleModal();
+  if (e.target.id === 'service-modal') closeServiceModal();
+  if (e.target.id === 'contact-modal') closeContactModal();
 });
