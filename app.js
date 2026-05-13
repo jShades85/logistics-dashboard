@@ -526,7 +526,6 @@ function openVehicleModal(id) {
 }
 
 function handlePhotoUpload(input) {
-function handlePhotoUpload(input) {
   if (!input.files[0]) return;
   const file = input.files[0];
   if (file.size > 2 * 1024 * 1024) { alert('Photo must be under 2MB. Try a smaller image.'); input.value = ''; return; }
