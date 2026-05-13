@@ -720,29 +720,22 @@ const CONTACT_TYPE_COLORS = {
 function renderContacts() {
   const wrap = document.getElementById('contacts-wrap');
   if (!contactsData.length) { wrap.innerHTML = '<div class="rma-empty">No contacts yet — add one above</div>'; return; }
-  const byType = {};
-  contactsData.forEach(c => { if (!byType[c.type]) byType[c.type] = []; byType[c.type].push(c); });
-  wrap.innerHTML = Object.entries(byType).map(([type, contacts]) => {
-    const col = CONTACT_TYPE_COLORS[type] || CONTACT_TYPE_COLORS['Other'];
-    return `<div class="contacts-group">
-      <div class="contacts-group-label" style="color:${col.fg}">${type}</div>
-      <div class="contacts-grid">${contacts.map(c => `
-        <div class="contact-card fade-in">
-          <div class="contact-card-header">
-            <span class="contact-name">${c.name}</span>
-            <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
-          </div>
-          ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
-          ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span style="font-size:12px;color:var(--muted)">${c.address}</span><a href="https://www.google.com/maps/search/${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps">📍</a></div>` : ''}
-          ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
-          <div class="contact-actions">
-            <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
-            <button class="fleet-action-btn danger" onclick="removeContact(${c.id})">✕</button>
-          </div>
-        </div>`).join('')}
+  wrap.innerHTML = `<div class="contacts-flat">${contactsData.map(c => {
+    const col = CONTACT_TYPE_COLORS[c.type] || CONTACT_TYPE_COLORS['Other'];
+    return `<div class="contact-card fade-in">
+      <div class="contact-card-header">
+        <span class="contact-name">${c.name}</span>
+        <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
+      </div>
+      ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
+      ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span class="contact-address">${c.address}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps">📍</a></div>` : ''}
+      ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
+      <div class="contact-actions">
+        <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
+        <button class="fleet-action-btn danger" onclick="removeContact(${c.id})">✕</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 
 // Close modals on backdrop click
