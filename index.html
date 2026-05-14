@@ -24,6 +24,17 @@
   </div>
 </header>
 
+<nav class="section-nav">
+  <a href="#section-po" class="section-nav-link"><i data-lucide="shopping-cart" class="nav-icon"></i>POs</a>
+  <a href="#section-rma" class="section-nav-link"><i data-lucide="refresh-cw" class="nav-icon"></i>RMAs</a>
+  <a href="#section-inventory" class="section-nav-link"><i data-lucide="package" class="nav-icon"></i>Inventory</a>
+  <a href="#section-showroom" class="section-nav-link"><i data-lucide="home" class="nav-icon"></i>Showroom</a>
+  <a href="#section-logistics" class="section-nav-link"><i data-lucide="clipboard-list" class="nav-icon"></i>Logistics</a>
+  <a href="#section-fleet" class="section-nav-link"><i data-lucide="truck" class="nav-icon"></i>Fleet</a>
+  <a href="#section-service" class="section-nav-link"><i data-lucide="wrench" class="nav-icon"></i>Service</a>
+  <a href="#section-contacts" class="section-nav-link"><i data-lucide="phone-call" class="nav-icon"></i>Contacts</a>
+</nav>
+
 <main>
   <!-- KPIs -->
   <div class="kpis">
@@ -35,8 +46,8 @@
   </div>
 
   <!-- PO Section Header -->
-  <div class="section-header">
-    <div class="section-title">🛒 Open Purchase Orders</div>
+  <div class="section-header" id="section-po">
+    <div class="section-title"><i data-lucide="shopping-cart" class="section-icon"></i>Open Purchase Orders</div>
   </div>
 
   <!-- Filter bar -->
@@ -48,7 +59,7 @@
     <button class="filter-btn" onclick="setFilter('Draft',this)">Draft</button>
     <button class="filter-btn toggle-received" id="toggle-received-btn" onclick="toggleReceived()">Show Received</button>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <i data-lucide="search" class="search-icon-lucide"></i>
       <input type="text" id="search-input" placeholder="Search vendor, project, PO #…" oninput="renderTable()">
     </div>
   </div>
@@ -79,8 +90,8 @@
   </div>
 
   <!-- RMA Tracker -->
-  <div class="section-header" style="margin-top:36px">
-    <div class="section-title">🔄 Open RMAs <span class="rma-count" id="rma-count"></span></div>
+  <div class="section-header" id="section-rma" style="margin-top:36px">
+    <div class="section-title"><i data-lucide="refresh-cw" class="section-icon"></i>Open RMAs <span class="rma-count" id="rma-count"></span></div>
   </div>
   <div class="rma-form">
     <div class="rma-field wide"><label>Client</label><input type="text" id="rma-client" placeholder="e.g. Smith Residence"></div>
@@ -104,8 +115,8 @@
   </div>
 
   <!-- Inventory Chart -->
-  <div class="section-header">
-    <div class="section-title">📦 Inventory Valuations</div>
+  <div class="section-header" id="section-inventory">
+    <div class="section-title"><i data-lucide="package" class="section-icon"></i>Inventory Valuations</div>
   </div>
   <div class="chart-wrap">
     <div class="chart-controls">
@@ -137,8 +148,8 @@
   </div>
 
   <!-- Showroom Checklist -->
-  <div class="section-header">
-    <div class="section-title">🏠 Showroom Weekly Checklist
+  <div class="section-header" id="section-showroom">
+    <div class="section-title"><i data-lucide="home" class="section-icon"></i>Showroom Weekly Checklist
       <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
     <button class="ghost-btn" onclick="resetChecklist()">↺ Reset Week</button>
@@ -150,8 +161,8 @@
   </div>
 
   <!-- Logistics Checklist -->
-  <div class="section-header">
-    <div class="section-title">📋 Logistics Checklist
+  <div class="section-header" id="section-logistics">
+    <div class="section-title"><i data-lucide="clipboard-list" class="section-icon"></i>Logistics Checklist
       <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
     <button class="ghost-btn" onclick="resetLogistics()">↺ Reset Week</button>
@@ -162,13 +173,157 @@
     <textarea id="logistics-notes" placeholder="Note any issues, follow-ups, or observations here…" oninput="saveLogisticsNotes()"></textarea>
   </div>
 
+
+  <!-- ═══ FLEET HUB ═══════════════════════════════════════════════════════════ -->
+  <div class="section-header" id="section-fleet" style="margin-top:36px">
+    <div class="section-title"><i data-lucide="truck" class="section-icon"></i>Fleet Hub</div>
+    <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openVehicleModal()">+ Add Vehicle</button>
+  </div>
+
+  <!-- Registration alert banner -->
+  <div id="fleet-reg-banner" class="reg-alert-banner" style="display:none"></div>
+
+  <!-- Vehicle cards grid -->
+  <div id="fleet-grid" class="fleet-grid">
+    <div class="fleet-empty">No vehicles added yet — click <strong>+ Add Vehicle</strong> to get started</div>
+  </div>
+
+  <!-- Service Requests -->
+  <div class="section-header" id="section-service" style="margin-top:28px">
+    <div class="section-title"><i data-lucide="wrench" class="section-icon"></i>Service Requests <span class="rma-count" id="service-count"></span></div>
+    <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openServiceModal()">+ New Request</button>
+  </div>
+  <div class="table-wrap" id="service-wrap">
+    <div class="rma-empty">No service requests yet</div>
+  </div>
+
+  <!-- Vendor Contacts -->
+  <div class="section-header" id="section-contacts" style="margin-top:36px">
+    <div class="section-title"><i data-lucide="phone-call" class="section-icon"></i>Vendor Contacts</div>
+    <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openContactModal()">+ Add Contact</button>
+  </div>
+  <div id="contacts-wrap">
+    <div class="rma-empty">No contacts yet — add one above</div>
+  </div>
+
 </main>
 
 <footer>Port City Sound &amp; Security · Logistics Dashboard · Data sourced from D-Tools SI</footer>
 
+<!-- ═══ VEHICLE MODAL ════════════════════════════════════════════════════════ -->
+<div id="fleet-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="fleet-modal-title">Add Vehicle</div>
+      <button class="modal-close" onclick="closeVehicleModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field narrow"><label>Vehicle #</label><input type="text" id="fm-number" placeholder="e.g. 1" maxlength="4"></div>
+        <div class="modal-field"><label>Assigned Technician</label><input type="text" id="fm-name" placeholder="e.g. John Smith"></div>
+        <div class="modal-field narrow"><label>Year</label><input type="text" id="fm-year" placeholder="2021" maxlength="4"></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Make</label><input type="text" id="fm-make" placeholder="Ford"></div>
+        <div class="modal-field"><label>Model</label><input type="text" id="fm-model" placeholder="Transit 250"></div>
+        <div class="modal-field narrow"><label>Color</label><input type="text" id="fm-color" placeholder="White"></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>License Plate</label><input type="text" id="fm-plate" placeholder="ABC 1234"></div>
+        <div class="modal-field wide"><label>VIN</label><input type="text" id="fm-vin" placeholder="1FTBW2CM3MKA00000" maxlength="17"></div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Registration Expiration</label><input type="date" id="fm-registration"></div>
+        <div class="modal-field narrow"><label>Tire Size</label><input type="text" id="fm-tiresize" placeholder="235/65R16"></div>
+      </div>
+
+      <div class="modal-field" style="width:100%"><label>Notes</label><input type="text" id="fm-notes" placeholder="Any notes about this vehicle…"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-btn" onclick="closeVehicleModal()">Cancel</button>
+      <button class="rma-add-btn" onclick="saveVehicle()">Save Vehicle</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SERVICE REQUEST MODAL ════════════════════════════════════════════════ -->
+<div id="service-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">New Service Request</div>
+      <button class="modal-close" onclick="closeServiceModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Vehicle</label>
+          <select id="sr-vehicle" style="background:var(--bg3);border:1px solid var(--border2);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Karla',sans-serif;outline:none;width:100%"></select>
+        </div>
+        <div class="modal-field">
+          <label>Status</label>
+          <select id="sr-status" style="background:var(--bg3);border:1px solid var(--border2);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Karla',sans-serif;outline:none;width:100%">
+            <option>Pending</option><option>Scheduled</option><option>In Progress</option><option>Resolved</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-field" style="width:100%"><label>Issue Description</label><input type="text" id="sr-issue" placeholder="Describe the issue…"></div>
+      <div class="modal-row">
+        <div class="modal-field">
+          <label>Vendor / Shop</label>
+          <select id="sr-vendor" style="background:var(--bg3);border:1px solid var(--border2);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Karla',sans-serif;outline:none;width:100%">
+            <option value="">— None —</option>
+          </select>
+        </div>
+        <div class="modal-field narrow"><label>Date Scheduled</label><input type="date" id="sr-date-scheduled"></div>
+      </div>
+      <div class="modal-field" style="width:100%"><label>Notes</label><input type="text" id="sr-notes" placeholder="Additional notes…"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-btn" onclick="closeServiceModal()">Cancel</button>
+      <button class="rma-add-btn" onclick="saveServiceRequest()">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONTACT MODAL ════════════════════════════════════════════════════════ -->
+<div id="contact-modal" class="modal-backdrop" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title" id="contact-modal-title">Add Contact</div>
+      <button class="modal-close" onclick="closeContactModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-row">
+        <div class="modal-field wide"><label>Business Name</label><input type="text" id="cm-name" placeholder="e.g. Brunswick Auto Repair"></div>
+        <div class="modal-field">
+          <label>Type</label>
+          <select id="cm-type" style="background:var(--bg3);border:1px solid var(--border2);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--text);font-family:'Karla',sans-serif;outline:none;width:100%">
+            <option>Repair Shop</option><option>Vinyl / Graphics</option><option>Tires</option><option>Glass</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-row">
+        <div class="modal-field"><label>Phone</label><input type="tel" id="cm-phone" placeholder="(910) 555-0100"></div>
+      </div>
+      <div class="modal-field" style="width:100%"><label>Address</label><input type="text" id="cm-address" placeholder="123 Main St, Shallotte, NC"></div>
+      <div class="modal-field" style="width:100%"><label>Notes</label><input type="text" id="cm-notes" placeholder="Hours, specialties, etc."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="ghost-btn" onclick="closeContactModal()">Cancel</button>
+      <button class="rma-add-btn" onclick="saveContact()">Save Contact</button>
+    </div>
+  </div>
+</div>
+
 <!-- Firebase -->
 
+<!-- Back to top -->
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+  <i data-lucide="arrow-up" style="width:16px;height:16px;stroke:white;stroke-width:2.5"></i>
+</button>
+
 <!-- External libraries -->
+<script src="https://unpkg.com/lucide@0.441.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
@@ -177,5 +332,45 @@
 
 <!-- App -->
 <script src="app.js"></script>
+<script>
+lucide.createIcons();
+
+// ── Back to top visibility ────────────────────────────────────────────────────
+const backToTop = document.getElementById('back-to-top');
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+});
+
+// ── Section nav scroll spy ────────────────────────────────────────────────────
+const navLinks = document.querySelectorAll('.section-nav-link');
+const sections = ['section-po','section-rma','section-inventory','section-showroom',
+                  'section-logistics','section-fleet','section-service','section-contacts'];
+const navOffset = 100; // header + sub-nav height
+
+function updateActiveNav() {
+  let current = sections[0];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= navOffset + 10) current = id;
+  });
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateActiveNav, { passive: true });
+updateActiveNav();
+
+// ── Smooth scroll offset for sticky nav ──────────────────────────────────────
+document.querySelectorAll('.section-nav-link').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.getElementById(link.getAttribute('href').slice(1));
+    if (target) {
+      const top = target.getBoundingClientRect().top + window.scrollY - navOffset + 10;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  });
+});
+</script>
 </body>
 </html>
