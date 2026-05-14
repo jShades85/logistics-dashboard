@@ -36,7 +36,7 @@
 
   <!-- PO Section Header -->
   <div class="section-header">
-    <div class="section-title">🛒 Open Purchase Orders</div>
+    <div class="section-title"><i data-lucide="shopping-cart" class="section-icon"></i>Open Purchase Orders</div>
   </div>
 
   <!-- Filter bar -->
@@ -48,7 +48,7 @@
     <button class="filter-btn" onclick="setFilter('Draft',this)">Draft</button>
     <button class="filter-btn toggle-received" id="toggle-received-btn" onclick="toggleReceived()">Show Received</button>
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <i data-lucide="search" class="search-icon-lucide"></i>
       <input type="text" id="search-input" placeholder="Search vendor, project, PO #…" oninput="renderTable()">
     </div>
   </div>
@@ -80,7 +80,7 @@
 
   <!-- RMA Tracker -->
   <div class="section-header" style="margin-top:36px">
-    <div class="section-title">🔄 Open RMAs <span class="rma-count" id="rma-count"></span></div>
+    <div class="section-title"><i data-lucide="refresh-cw" class="section-icon"></i>Open RMAs <span class="rma-count" id="rma-count"></span></div>
   </div>
   <div class="rma-form">
     <div class="rma-field wide"><label>Client</label><input type="text" id="rma-client" placeholder="e.g. Smith Residence"></div>
@@ -105,7 +105,7 @@
 
   <!-- Inventory Chart -->
   <div class="section-header">
-    <div class="section-title">📦 Inventory Valuations</div>
+    <div class="section-title"><i data-lucide="package" class="section-icon"></i>Inventory Valuations</div>
   </div>
   <div class="chart-wrap">
     <div class="chart-controls">
@@ -121,7 +121,7 @@
 
   <!-- Showroom Checklist -->
   <div class="section-header">
-    <div class="section-title">🏠 Showroom Weekly Checklist
+    <div class="section-title"><i data-lucide="home" class="section-icon"></i>Showroom Weekly Checklist
       <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
     <button class="ghost-btn" onclick="resetChecklist()">↺ Reset Week</button>
@@ -134,7 +134,7 @@
 
   <!-- Logistics Checklist -->
   <div class="section-header">
-    <div class="section-title">📋 Logistics Checklist
+    <div class="section-title"><i data-lucide="clipboard-list" class="section-icon"></i>Logistics Checklist
       <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
     <button class="ghost-btn" onclick="resetLogistics()">↺ Reset Week</button>
@@ -148,7 +148,7 @@
 
   <!-- ═══ FLEET HUB ═══════════════════════════════════════════════════════════ -->
   <div class="section-header" style="margin-top:36px">
-    <div class="section-title">🚐 Fleet Hub</div>
+    <div class="section-title"><i data-lucide="truck" class="section-icon"></i>Fleet Hub</div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openVehicleModal()">+ Add Vehicle</button>
   </div>
 
@@ -162,7 +162,7 @@
 
   <!-- Service Requests -->
   <div class="section-header" style="margin-top:28px">
-    <div class="section-title">🔧 Service Requests <span class="rma-count" id="service-count"></span></div>
+    <div class="section-title"><i data-lucide="wrench" class="section-icon"></i>Service Requests <span class="rma-count" id="service-count"></span></div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openServiceModal()">+ New Request</button>
   </div>
   <div class="table-wrap" id="service-wrap">
@@ -171,7 +171,7 @@
 
   <!-- Vendor Contacts -->
   <div class="section-header" style="margin-top:36px">
-    <div class="section-title">📞 Vendor Contacts</div>
+    <div class="section-title"><i data-lucide="phone-call" class="section-icon"></i>Vendor Contacts</div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openContactModal()">+ Add Contact</button>
   </div>
   <div id="contacts-wrap">
@@ -290,6 +290,7 @@
 <!-- Firebase -->
 
 <!-- External libraries -->
+<script src="https://unpkg.com/lucide@0.441.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 
@@ -298,5 +299,6 @@
 
 <!-- App -->
 <script src="app.js"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

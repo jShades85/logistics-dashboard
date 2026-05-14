@@ -753,3 +753,25 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   margin-left: 4px;
 }
 .map-pin-link:hover { opacity: 1; }
+
+/* ── Lucide section icons ─────────────────────────────────────────────────────*/
+.section-icon {
+  width: 15px;
+  height: 15px;
+  stroke: var(--navy);
+  stroke-width: 2.5;
+  flex-shrink: 0;
+  position: relative;
+  top: 1px;
+}
+.search-icon-lucide {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 13px;
+  height: 13px;
+  stroke: var(--muted);
+  stroke-width: 2;
+  pointer-events: none;
+}
