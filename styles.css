@@ -763,10 +763,10 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
 
 /* ── Lucide section icons ─────────────────────────────────────────────────────*/
 .section-icon {
-  width: 15px;
-  height: 15px;
-  stroke: var(--navy);
-  stroke-width: 2.5;
+  width: 20px;
+  height: 20px;
+  stroke: var(--text);
+  stroke-width: 2;
   flex-shrink: 0;
   position: relative;
   top: 1px;
