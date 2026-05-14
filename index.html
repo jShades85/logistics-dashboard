@@ -24,6 +24,17 @@
   </div>
 </header>
 
+<nav class="section-nav">
+  <a href="#section-po" class="section-nav-link"><i data-lucide="shopping-cart" class="nav-icon"></i>POs</a>
+  <a href="#section-rma" class="section-nav-link"><i data-lucide="refresh-cw" class="nav-icon"></i>RMAs</a>
+  <a href="#section-inventory" class="section-nav-link"><i data-lucide="package" class="nav-icon"></i>Inventory</a>
+  <a href="#section-showroom" class="section-nav-link"><i data-lucide="home" class="nav-icon"></i>Showroom</a>
+  <a href="#section-logistics" class="section-nav-link"><i data-lucide="clipboard-list" class="nav-icon"></i>Logistics</a>
+  <a href="#section-fleet" class="section-nav-link"><i data-lucide="truck" class="nav-icon"></i>Fleet</a>
+  <a href="#section-service" class="section-nav-link"><i data-lucide="wrench" class="nav-icon"></i>Service</a>
+  <a href="#section-contacts" class="section-nav-link"><i data-lucide="phone-call" class="nav-icon"></i>Contacts</a>
+</nav>
+
 <main>
   <!-- KPIs -->
   <div class="kpis">
@@ -35,7 +46,7 @@
   </div>
 
   <!-- PO Section Header -->
-  <div class="section-header">
+  <div class="section-header" id="section-po">
     <div class="section-title"><i data-lucide="shopping-cart" class="section-icon"></i>Open Purchase Orders</div>
   </div>
 
@@ -79,7 +90,7 @@
   </div>
 
   <!-- RMA Tracker -->
-  <div class="section-header" style="margin-top:36px">
+  <div class="section-header" id="section-rma" style="margin-top:36px">
     <div class="section-title"><i data-lucide="refresh-cw" class="section-icon"></i>Open RMAs <span class="rma-count" id="rma-count"></span></div>
   </div>
   <div class="rma-form">
@@ -104,7 +115,7 @@
   </div>
 
   <!-- Inventory Chart -->
-  <div class="section-header">
+  <div class="section-header" id="section-inventory">
     <div class="section-title"><i data-lucide="package" class="section-icon"></i>Inventory Valuations</div>
   </div>
   <div class="chart-wrap">
@@ -120,7 +131,7 @@
   </div>
 
   <!-- Showroom Checklist -->
-  <div class="section-header">
+  <div class="section-header" id="section-showroom">
     <div class="section-title"><i data-lucide="home" class="section-icon"></i>Showroom Weekly Checklist
       <span id="showroom-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
@@ -133,7 +144,7 @@
   </div>
 
   <!-- Logistics Checklist -->
-  <div class="section-header">
+  <div class="section-header" id="section-logistics">
     <div class="section-title"><i data-lucide="clipboard-list" class="section-icon"></i>Logistics Checklist
       <span id="logistics-week" style="font-size:12px;font-weight:400;color:var(--muted);font-family:'DM Mono',monospace"></span>
     </div>
@@ -147,7 +158,7 @@
 
 
   <!-- ═══ FLEET HUB ═══════════════════════════════════════════════════════════ -->
-  <div class="section-header" style="margin-top:36px">
+  <div class="section-header" id="section-fleet" style="margin-top:36px">
     <div class="section-title"><i data-lucide="truck" class="section-icon"></i>Fleet Hub</div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openVehicleModal()">+ Add Vehicle</button>
   </div>
@@ -161,7 +172,7 @@
   </div>
 
   <!-- Service Requests -->
-  <div class="section-header" style="margin-top:28px">
+  <div class="section-header" id="section-service" style="margin-top:28px">
     <div class="section-title"><i data-lucide="wrench" class="section-icon"></i>Service Requests <span class="rma-count" id="service-count"></span></div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openServiceModal()">+ New Request</button>
   </div>
@@ -170,7 +181,7 @@
   </div>
 
   <!-- Vendor Contacts -->
-  <div class="section-header" style="margin-top:36px">
+  <div class="section-header" id="section-contacts" style="margin-top:36px">
     <div class="section-title"><i data-lucide="phone-call" class="section-icon"></i>Vendor Contacts</div>
     <button class="btn" style="background:var(--navy);border-color:var(--navy);font-size:11px;padding:7px 18px" onclick="openContactModal()">+ Add Contact</button>
   </div>
@@ -289,6 +300,11 @@
 
 <!-- Firebase -->
 
+<!-- Back to top -->
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">
+  <i data-lucide="arrow-up" style="width:16px;height:16px;stroke:white;stroke-width:2.5"></i>
+</button>
+
 <!-- External libraries -->
 <script src="https://unpkg.com/lucide@0.441.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -299,6 +315,45 @@
 
 <!-- App -->
 <script src="app.js"></script>
-<script>lucide.createIcons();</script>
+<script>
+lucide.createIcons();
+
+// ── Back to top visibility ────────────────────────────────────────────────────
+const backToTop = document.getElementById('back-to-top');
+window.addEventListener('scroll', () => {
+  backToTop.classList.toggle('visible', window.scrollY > 400);
+});
+
+// ── Section nav scroll spy ────────────────────────────────────────────────────
+const navLinks = document.querySelectorAll('.section-nav-link');
+const sections = ['section-po','section-rma','section-inventory','section-showroom',
+                  'section-logistics','section-fleet','section-service','section-contacts'];
+const navOffset = 100; // header + sub-nav height
+
+function updateActiveNav() {
+  let current = sections[0];
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.getBoundingClientRect().top <= navOffset + 10) current = id;
+  });
+  navLinks.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+}
+window.addEventListener('scroll', updateActiveNav, { passive: true });
+updateActiveNav();
+
+// ── Smooth scroll offset for sticky nav ──────────────────────────────────────
+document.querySelectorAll('.section-nav-link').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.getElementById(link.getAttribute('href').slice(1));
+    if (target) {
+      const top = target.getBoundingClientRect().top + window.scrollY - navOffset + 10;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  });
+});
+</script>
 </body>
 </html>

@@ -22,6 +22,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-padding-top: 110px; } /* header 60px + subnav 40px + 10px breathing room */
 
 body {
   background: var(--bg);
@@ -781,4 +782,99 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
   stroke: var(--muted);
   stroke-width: 2;
   pointer-events: none;
+}
+
+/* ── Section nav bar ─────────────────────────────────────────────────────────*/
+.section-nav {
+  position: sticky;
+  top: 60px; /* sits directly below the 60px header */
+  z-index: 90;
+  background: #00477a; /* slightly darker than navy for visual separation */
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 2px;
+  height: 40px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.section-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 14px;
+  height: 100%;
+  font-family: 'Work Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.55);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.section-nav-link:hover {
+  color: rgba(255,255,255,0.9);
+}
+.section-nav-link.active {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+.nav-icon {
+  width: 12px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+/* ── Back to top button ──────────────────────────────────────────────────────*/
+#back-to-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 38px;
+  height: 38px;
+  background: var(--navy);
+  border: none;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, background 0.15s;
+  z-index: 200;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+#back-to-top.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+#back-to-top:hover { background: var(--navy-dark); }
+
+/* ── Mobile section nav ──────────────────────────────────────────────────────*/
+@media (max-width: 768px) {
+  .section-nav {
+    padding: 0 12px;
+    gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    top: 56px;
+  }
+  .section-nav::-webkit-scrollbar { display: none; }
+  .section-nav-link {
+    padding: 0 10px;
+    font-size: 10px;
+  }
+  #back-to-top {
+    bottom: 16px;
+    right: 16px;
+    width: 34px;
+    height: 34px;
+  }
 }
