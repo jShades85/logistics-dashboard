@@ -745,14 +745,21 @@ footer { text-align: center; padding: 32px; font-size: 10px; color: var(--muted)
 
 /* ── Map pin link ────────────────────────────────────────────────────────────*/
 .map-pin-link {
-  font-size: 13px;
   text-decoration: none;
-  opacity: 0.6;
+  opacity: 0.5;
   transition: opacity 0.15s;
   flex-shrink: 0;
   margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
 }
 .map-pin-link:hover { opacity: 1; }
+.map-pin-icon {
+  width: 13px;
+  height: 13px;
+  stroke: var(--navy);
+  stroke-width: 2;
+}
 
 /* ── Lucide section icons ─────────────────────────────────────────────────────*/
 .section-icon {

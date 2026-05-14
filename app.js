@@ -728,7 +728,7 @@ function renderContacts() {
         <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
       </div>
       ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
-      ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span class="contact-address">${c.address}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps">📍</a></div>` : ''}
+      ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span class="contact-address">${c.address}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps"><i data-lucide="map-pin" class="map-pin-icon"></i></a></div>` : ''}
       ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
       <div class="contact-actions">
         <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
@@ -736,6 +736,7 @@ function renderContacts() {
       </div>
     </div>`;
   }).join('')}</div>`;
+  if (window.lucide) lucide.createIcons();
 }
 
 // Close modals on backdrop click
