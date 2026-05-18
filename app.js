@@ -1,4 +1,107 @@
 // ═══════════════════════════════════════════════════════════════════════════════
+// SLACK CONFIG — Order Request Integration
+// ═══════════════════════════════════════════════════════════════════════════════
+const SLACK_TOKEN   = 'PASTE_YOUR_TOKEN_HERE';   // xoxb-...
+const SLACK_CHANNEL = 'C068G11H94P';             // #team-purchase-orders
+const SLACK_RESOLVE_EMOJI = 'white_check_mark';  // ✅
+const SLACK_POLL_INTERVAL = 60000;               // 60 seconds
+
+let orderRequests = [];
+let slackPollTimer = null;
+
+async function fetchOrderRequests() {
+  if (!SLACK_TOKEN || SLACK_TOKEN === 'PASTE_YOUR_TOKEN_HERE') return;
+  try {
+    const res = await fetch(
+      `https://slack.com/api/conversations.history?channel=${SLACK_CHANNEL}&limit=100`,
+      { headers: { Authorization: `Bearer ${SLACK_TOKEN}` } }
+    );
+    const data = await res.json();
+    if (!data.ok) { console.warn('Slack API error:', data.error); return; }
+
+    const msgs = (data.messages || []).filter(m => {
+      // Only workflow bot messages that contain our expected fields
+      if (!m.text) return false;
+      const t = m.text;
+      return t.includes('Port Number:') && t.includes('Phase:') && t.includes('Submitted by:');
+    });
+
+    // Filter out messages already resolved with ✅
+    orderRequests = msgs
+      .filter(m => {
+        const reactions = m.reactions || [];
+        return !reactions.some(r => r.name === SLACK_RESOLVE_EMOJI);
+      })
+      .map(m => {
+        const text = m.text;
+        const portMatch = text.match(/Port Number:\s*(\S+)/i);
+        const phaseMatch = text.match(/Phase:\s*([^\n]+)/i);
+        const submittedMatch = text.match(/Submitted by:\s*<@([^>]+)>|Submitted by:\s*([^\n]+)/i);
+        return {
+          ts: m.ts,
+          port: portMatch ? portMatch[1].trim() : '—',
+          phase: phaseMatch ? phaseMatch[1].trim() : '—',
+          submitted: submittedMatch ? (submittedMatch[2] || submittedMatch[1] || '—').trim() : '—',
+          time: new Date(parseFloat(m.ts) * 1000).toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+          }),
+        };
+      });
+
+    renderOrderRequests();
+  } catch (err) {
+    console.error('Slack fetch error:', err);
+  }
+}
+
+function renderOrderRequests() {
+  const countEl = document.getElementById('kpi-orders');
+  const listEl  = document.getElementById('order-request-list');
+  if (countEl) countEl.textContent = orderRequests.length || '0';
+
+  if (!listEl) return;
+  if (!orderRequests.length) {
+    listEl.innerHTML = '<div class="order-empty">No open order requests — react with ✅ in Slack to clear them</div>';
+    return;
+  }
+  listEl.innerHTML = `<table>
+    <thead><tr>
+      <th>Port #</th><th>Phase</th><th>Submitted By</th><th>Time</th>
+    </tr></thead>
+    <tbody>
+      ${orderRequests.map(r => `
+        <tr class="fade-in">
+          <td><span class="po-num">${r.port}</span></td>
+          <td><span class="badge badge-issued">${r.phase}</span></td>
+          <td><span class="vendor-name">${r.submitted}</span></td>
+          <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.time}</td>
+        </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function startSlackPolling() {
+  if (!SLACK_TOKEN || SLACK_TOKEN === 'PASTE_YOUR_TOKEN_HERE') {
+    const listEl = document.getElementById('order-request-list');
+    if (listEl) listEl.innerHTML = '<div class="order-empty">⚠ Add your Slack token to app.js to enable order request sync</div>';
+    const countEl = document.getElementById('kpi-orders');
+    if (countEl) countEl.textContent = '—';
+    return;
+  }
+  fetchOrderRequests();
+  slackPollTimer = setInterval(fetchOrderRequests, SLACK_POLL_INTERVAL);
+}
+
+let orderRequestsVisible = true;
+function toggleOrderRequests() {
+  orderRequestsVisible = !orderRequestsVisible;
+  const wrap  = document.getElementById('order-request-wrap');
+  const arrow = document.getElementById('order-toggle-arrow');
+  if (wrap)  wrap.style.display  = orderRequestsVisible ? '' : 'none';
+  if (arrow) arrow.textContent   = orderRequestsVisible ? '▲ Hide' : '▼ Show';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // MAIN INIT
 // ═══════════════════════════════════════════════════════════════════════════════
 function initDashboard() {
@@ -10,6 +113,7 @@ function initDashboard() {
   initLogisticsState();
   renderLogistics();
   renderRMA();
+  startSlackPolling();
 
   // Listen to Firebase collections
   listenShowroom();
@@ -291,7 +395,7 @@ function updateInitials(secId, val) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // INVENTORY CHART — Firebase
 // ═══════════════════════════════════════════════════════════════════════════════
-let inventoryEntries=[], invChart=null, invDetailChart=null, stgDetailChart=null, combDetailChart=null;
+let inventoryEntries=[], invChart=null;
 
 function listenInventory() {
   waitForFirebase(()=>{
@@ -320,73 +424,23 @@ async function clearLastEntry() {
 
 function fmtMoney(n){return '$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 
-function fmtDelta(current, previous) {
-  if(previous===undefined) return '';
-  const diff=current-previous;
-  const abs='$'+Math.abs(diff).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(diff>0) return `<span class="delta-up">▲ ${abs} vs last month</span>`;
-  if(diff<0) return `<span class="delta-down">▼ ${abs} vs last month</span>`;
-  return `<span class="delta-flat">— no change</span>`;
-}
-
-function detailAxisRange(data) {
-  const mn=Math.min(...data), mx=Math.max(...data), range=mx-mn||mx*0.01;
-  return { min: Math.floor((mn-range*0.5)/1000)*1000, max: Math.ceil((mx+range*0.5)/1000)*1000 };
-}
-
-function buildDetailChart(canvasId, data, color, labels) {
-  const ctx=document.getElementById(canvasId);
-  if(!ctx) return null;
-  const {min,max}=detailAxisRange(data);
-  return new Chart(ctx.getContext('2d'),{
-    type:'line',
-    data:{labels,datasets:[{label:'',data,borderColor:color,backgroundColor:color.replace(')',',0.08)').replace('rgb','rgba'),pointBackgroundColor:color,tension:0.3,pointRadius:3,borderWidth:2}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{display:false},ticks:{color:'#64748b',font:{family:'DM Mono',size:10},maxTicksLimit:4,maxRotation:0}},y:{min,max,grid:{color:'rgba(0,0,0,0.05)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:10},maxTicksLimit:4,callback:v=>'$'+Math.round(v/1000)+'K'}}}}
-  });
-}
-
 function renderInventoryChart() {
-  const area=document.getElementById('chart-area'), totals=document.getElementById('chart-totals'), detail=document.getElementById('chart-detail');
-  if(!inventoryEntries.length){
-    area.innerHTML='<div class="no-chart-data">No entries yet — add your first inventory total above</div>';
-    totals.innerHTML='';
-    if(detail) detail.style.display='none';
-    [invChart,invDetailChart,stgDetailChart,combDetailChart].forEach(c=>{if(c)c.destroy();});
-    invChart=invDetailChart=stgDetailChart=combDetailChart=null;
-    return;
-  }
-  const latest=inventoryEntries[inventoryEntries.length-1];
-  const prev=inventoryEntries.length>1?inventoryEntries[inventoryEntries.length-2]:undefined;
-  const combined=latest.inventory+latest.staging;
-  const prevCombined=prev?prev.inventory+prev.staging:undefined;
-  totals.innerHTML=`
-    <div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span> ${fmtDelta(latest.inventory,prev?.inventory)}</div>
-    <div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span> ${fmtDelta(latest.staging,prev?.staging)}</div>
-    <div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span> ${fmtDelta(combined,prevCombined)}</div>`;
+  const area=document.getElementById('chart-area'), totals=document.getElementById('chart-totals');
+  if(!inventoryEntries.length){area.innerHTML='<div class="no-chart-data">No entries yet — add your first inventory total above</div>';totals.innerHTML='';if(invChart){invChart.destroy();invChart=null;}return;}
+  const latest=inventoryEntries[inventoryEntries.length-1], combined=latest.inventory+latest.staging;
+  totals.innerHTML=`<div class="chart-total">Current Inventory <span class="inv">${fmtMoney(latest.inventory)}</span></div><div class="chart-total">Current Staging <span class="stg">${fmtMoney(latest.staging)}</span></div><div class="chart-total">Combined Total <span class="comb">${fmtMoney(combined)}</span></div>`;
   const labels=inventoryEntries.map(e=>{const d=new Date(e.date+'T00:00:00');return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
-  const invData=inventoryEntries.map(e=>e.inventory);
-  const stgData=inventoryEntries.map(e=>e.staging);
-  const combData=inventoryEntries.map(e=>e.inventory+e.staging);
-  // Main chart
   if(invChart)invChart.destroy();
   area.innerHTML='<canvas id="inv-chart" style="width:100%!important"></canvas>';
   invChart=new Chart(document.getElementById('inv-chart').getContext('2d'),{
     type:'line',
     data:{labels,datasets:[
-      {label:'Inventory',data:invData,borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.08)',pointBackgroundColor:'#93c5fd',tension:0.3,pointRadius:4},
-      {label:'Staging',data:stgData,borderColor:'#86efac',backgroundColor:'rgba(134,239,172,0.08)',pointBackgroundColor:'#86efac',tension:0.3,pointRadius:4},
-      {label:'Combined',data:combData,borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,0.06)',pointBackgroundColor:'#fbbf24',tension:0.3,pointRadius:4,borderDash:[4,3]},
+      {label:'Inventory',data:inventoryEntries.map(e=>e.inventory),borderColor:'#93c5fd',backgroundColor:'rgba(147,197,253,0.08)',pointBackgroundColor:'#93c5fd',tension:0.3,pointRadius:4},
+      {label:'Staging',data:inventoryEntries.map(e=>e.staging),borderColor:'#86efac',backgroundColor:'rgba(134,239,172,0.08)',pointBackgroundColor:'#86efac',tension:0.3,pointRadius:4},
+      {label:'Combined',data:inventoryEntries.map(e=>e.inventory+e.staging),borderColor:'#fbbf24',backgroundColor:'rgba(251,191,36,0.06)',pointBackgroundColor:'#fbbf24',tension:0.3,pointRadius:4,borderDash:[4,3]},
     ]},
-    options:{responsive:true,maintainAspectRatio:true,onResize:(chart)=>{chart.resize();},plugins:{legend:{labels:{color:'#94a3b8',font:{family:'DM Mono',size:12},boxWidth:12,padding:20}},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${c.dataset.label}: ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11},callback:v=>'$'+Math.round(v/1000)+'K'}}}}
+    options:{responsive:true,maintainAspectRatio:true,onResize:(chart,size)=>{ chart.resize(); },plugins:{legend:{labels:{color:'#94a3b8',font:{family:'DM Sans',size:12},boxWidth:12,padding:20}},tooltip:{backgroundColor:'#1c2333',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',callbacks:{label:c=>` ${c.dataset.label}: ${fmtMoney(c.raw)}`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#64748b',font:{family:'DM Mono',size:11},callback:v=>'$'+Math.round(v/1000)+'K'}}}}
   });
-  // Detail charts
-  if(detail) detail.style.display='block';
-  if(invDetailChart)invDetailChart.destroy();
-  if(stgDetailChart)stgDetailChart.destroy();
-  if(combDetailChart)combDetailChart.destroy();
-  invDetailChart=buildDetailChart('inv-detail-chart',invData,'#93c5fd',labels);
-  stgDetailChart=buildDetailChart('stg-detail-chart',stgData,'#86efac',labels);
-  combDetailChart=buildDetailChart('comb-detail-chart',combData,'#fbbf24',labels);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -426,10 +480,9 @@ function renderRMA() {
 
 // Fix Chart.js resize
 window.addEventListener('resize', () => {
-  if (invChart) invChart.resize();
-  if (invDetailChart) invDetailChart.resize();
-  if (stgDetailChart) stgDetailChart.resize();
-  if (combDetailChart) combDetailChart.resize();
+  if (invChart) {
+    invChart.resize();
+  }
 });
 
 // Init on load
@@ -440,359 +493,5 @@ window.addEventListener('DOMContentLoaded', ()=>{
   initLogisticsState();
   renderLogistics();
   renderRMA();
-  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); listenFleet(); });
-});
-// ═══════════════════════════════════════════════════════════════════════════════
-// FLEET HUB — Firebase
-// ═══════════════════════════════════════════════════════════════════════════════
-let fleetData = [], serviceData = [], contactsData = [];
-let fleetModalId = null; // vehicle being edited in modal
-
-// ── Registration badge helper ─────────────────────────────────────────────────
-function regBadge(expDate) {
-  if (!expDate) return '<span class="reg-badge reg-none">No Date</span>';
-  const today = new Date(); today.setHours(0,0,0,0);
-  const exp   = new Date(expDate + 'T00:00:00');
-  const days  = Math.round((exp - today) / 86400000);
-  const label = exp.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
-  if (days < 0)  return `<span class="reg-badge reg-expired">EXPIRED · ${label}</span>`;
-  if (days <= 30) return `<span class="reg-badge reg-red">Exp. ${label}</span>`;
-  if (days <= 60) return `<span class="reg-badge reg-yellow">Exp. ${label}</span>`;
-  return `<span class="reg-badge reg-green">${label}</span>`;
-}
-
-function regDaysUntil(expDate) {
-  if (!expDate) return Infinity;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const exp   = new Date(expDate + 'T00:00:00');
-  return Math.round((exp - today) / 86400000);
-}
-
-// ── Registration alert banner ─────────────────────────────────────────────────
-function renderRegBanner() {
-  const banner = document.getElementById('fleet-reg-banner');
-  const urgent = fleetData.filter(v => regDaysUntil(v.registration) <= 60);
-  if (!urgent.length) { banner.style.display = 'none'; return; }
-  banner.style.display = 'block';
-  banner.innerHTML = `<span class="reg-banner-icon">⚠</span> <strong>Registration Alert:</strong> ` +
-    urgent.map(v => {
-      const d = regDaysUntil(v.registration);
-      return `<span class="reg-banner-item ${d < 0 ? 'expired' : d <= 30 ? 'soon' : 'upcoming'}">${v.name} ${d < 0 ? '(EXPIRED)' : `(${d}d)`}</span>`;
-    }).join('  ·  ');
-}
-
-// ── Fleet listeners ───────────────────────────────────────────────────────────
-function listenFleet() {
-  waitForFirebase(() => {
-    window._onSnapshot(window._doc(window._db, 'dashboard', 'fleet'), snap => {
-      if (snap.exists() && snap.data().vehicles) fleetData = snap.data().vehicles;
-      renderFleetCards();
-      renderRegBanner();
-      renderServiceRequests();
-    });
-    window._onSnapshot(window._doc(window._db, 'dashboard', 'service'), snap => {
-      if (snap.exists() && snap.data().requests) serviceData = snap.data().requests;
-      renderFleetCards();
-      renderServiceRequests();
-    });
-    window._onSnapshot(window._doc(window._db, 'dashboard', 'contacts'), snap => {
-      if (snap.exists() && snap.data().contacts) contactsData = snap.data().contacts;
-      renderContacts();
-      renderServiceRequests(); // re-render so vendor dropdowns update
-    });
-  });
-}
-
-// ── Fleet cards ───────────────────────────────────────────────────────────────
-function renderFleetCards() {
-  const grid = document.getElementById('fleet-grid');
-  if (!fleetData.length) {
-    grid.innerHTML = '<div class="fleet-empty">No vehicles added yet — click <strong>+ Add Vehicle</strong> to get started</div>';
-    return;
-  }
-  // Sort by vehicle number if present
-  const sorted = [...fleetData].sort((a,b) => {
-    const an = parseInt(a.number) || 999, bn = parseInt(b.number) || 999;
-    return an - bn;
-  });
-  grid.innerHTML = sorted.map(v => {
-    const open = serviceData.filter(s => s.vehicleId === v.id && s.status !== 'Resolved').length;
-    const vehicleLabel = [v.number ? `#${v.number}` : '', v.year, v.make, v.model].filter(Boolean).join(' ');
-    return `
-    <div class="fleet-card fade-in">
-      <div class="fleet-card-inner">
-        <div class="fleet-card-header">
-          <div>
-            <div class="fleet-card-name">${v.name || '—'}${v.number ? `<span class="fleet-num-tag">#${v.number}</span>` : ''}</div>
-            <div class="fleet-card-ymm">${[v.year, v.make, v.model].filter(Boolean).join(' ') || '—'}</div>
-          </div>
-          ${open > 0 ? `<span class="fleet-service-badge">${open} open</span>` : ''}
-        </div>
-        <div class="fleet-card-details">
-          <div class="fleet-card-row"><span class="fleet-card-label">Plate</span><span class="fleet-card-val mono">${v.plate || '—'}</span></div>
-          <div class="fleet-card-row"><span class="fleet-card-label">VIN</span><span class="fleet-card-val vin">${v.vin ? v.vin.toUpperCase() : '—'}</span></div>
-          ${v.tiresize ? `<div class="fleet-card-row"><span class="fleet-card-label">Tires</span><span class="fleet-card-val mono">${v.tiresize}</span></div>` : ''}
-          <div class="fleet-card-row reg-row"><span class="fleet-card-label">Reg.</span>${regBadge(v.registration)}</div>
-        </div>
-        ${v.notes ? `<div class="fleet-card-notes">${v.notes}</div>` : ''}
-        <div class="fleet-card-actions">
-          <button class="fleet-action-btn ghost" onclick="openVehicleModal(${v.id})">Edit</button>
-          <button class="fleet-action-btn danger" onclick="removeVehicle(${v.id})">✕</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-// ── Vehicle modal (add / edit) ─────────────────────────────────────────────────
-function openVehicleModal(id) {
-  fleetModalId = id || null;
-  const v = id ? fleetData.find(v => v.id === id) : {};
-  document.getElementById('fleet-modal-title').textContent = id ? 'Edit Vehicle' : 'Add Vehicle';
-  document.getElementById('fm-number').value       = v?.number       || '';
-  document.getElementById('fm-name').value         = v?.name         || '';
-  document.getElementById('fm-year').value         = v?.year         || '';
-  document.getElementById('fm-make').value         = v?.make         || '';
-  document.getElementById('fm-model').value        = v?.model        || '';
-  document.getElementById('fm-color').value        = v?.color        || '';
-  document.getElementById('fm-plate').value        = v?.plate        || '';
-  document.getElementById('fm-vin').value          = v?.vin          || '';
-  document.getElementById('fm-registration').value = v?.registration || '';
-  document.getElementById('fm-tiresize').value     = v?.tiresize     || '';
-  document.getElementById('fm-notes').value        = v?.notes        || '';
-  document.getElementById('fleet-modal').style.display = 'flex';
-}
-
-
-
-
-function closeVehicleModal() {
-  document.getElementById('fleet-modal').style.display = 'none';
-  fleetModalId = null;
-}
-
-async function saveVehicle() {
-  const name = document.getElementById('fm-name').value.trim();
-  if (!name) { alert('Assigned technician is required.'); return; }
-  const vehicle = {
-    id:           fleetModalId || Date.now(),
-    number:       document.getElementById('fm-number').value.trim(),
-    name,
-    year:         document.getElementById('fm-year').value.trim(),
-    make:         document.getElementById('fm-make').value.trim(),
-    model:        document.getElementById('fm-model').value.trim(),
-    color:        document.getElementById('fm-color').value.trim(),
-    plate:        document.getElementById('fm-plate').value.trim().toUpperCase(),
-    vin:          document.getElementById('fm-vin').value.trim().toUpperCase(),
-    registration: document.getElementById('fm-registration').value,
-    tiresize:     document.getElementById('fm-tiresize').value.trim(),
-    notes:        document.getElementById('fm-notes').value.trim(),
-  };
-  if (fleetModalId) {
-    const idx = fleetData.findIndex(v => v.id === fleetModalId);
-    if (idx >= 0) fleetData[idx] = vehicle; else fleetData.push(vehicle);
-  } else {
-    fleetData.push(vehicle);
-  }
-  closeVehicleModal();
-  renderFleetCards(); renderRegBanner();
-  await window._saveDoc('dashboard/fleet', { vehicles: fleetData });
-}
-
-async function removeVehicle(id) {
-  if (!confirm('Remove this vehicle? This cannot be undone.')) return;
-  fleetData = fleetData.filter(v => v.id !== id);
-  serviceData = serviceData.filter(s => s.vehicleId !== id);
-  renderFleetCards(); renderRegBanner(); renderServiceRequests();
-  await window._saveDoc('dashboard/fleet', { vehicles: fleetData });
-  await window._saveDoc('dashboard/service', { requests: serviceData });
-}
-
-// ── Service request modal ──────────────────────────────────────────────────────
-function openServiceModal(vehicleId) {
-  document.getElementById('sr-vehicle').value = vehicleId || '';
-  // populate vehicle dropdown
-  const sel = document.getElementById('sr-vehicle');
-  sel.innerHTML = fleetData.map(v => `<option value="${v.id}" ${v.id === vehicleId ? 'selected' : ''}>${v.name}</option>`).join('');
-  // populate vendor dropdown
-  const vsel = document.getElementById('sr-vendor');
-  vsel.innerHTML = '<option value="">— None —</option>' + contactsData.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  document.getElementById('sr-issue').value = '';
-  document.getElementById('sr-date-scheduled').value = '';
-  document.getElementById('sr-notes').value = '';
-  document.getElementById('sr-status').value = 'Pending';
-  document.getElementById('service-modal').style.display = 'flex';
-}
-
-function closeServiceModal() {
-  document.getElementById('service-modal').style.display = 'none';
-}
-
-async function saveServiceRequest() {
-  const vehicleId = parseInt(document.getElementById('sr-vehicle').value);
-  const issue     = document.getElementById('sr-issue').value.trim();
-  if (!vehicleId || !issue) { alert('Please select a vehicle and describe the issue.'); return; }
-  const vehicle   = fleetData.find(v => v.id === vehicleId);
-  const vendorId  = parseInt(document.getElementById('sr-vendor').value) || null;
-  const vendor    = vendorId ? contactsData.find(c => c.id === vendorId) : null;
-  const today     = new Date().toISOString().split('T')[0];
-  serviceData.push({
-    id:            Date.now(),
-    vehicleId,
-    vehicleName:   vehicle?.name || '',
-    issue,
-    status:        document.getElementById('sr-status').value,
-    vendorId,
-    vendorName:    vendor?.name || '',
-    dateSubmitted: today,
-    dateScheduled: document.getElementById('sr-date-scheduled').value,
-    notes:         document.getElementById('sr-notes').value.trim(),
-  });
-  closeServiceModal();
-  renderFleetCards(); renderServiceRequests();
-  await window._saveDoc('dashboard/service', { requests: serviceData });
-}
-
-// ── Service requests list ──────────────────────────────────────────────────────
-function renderServiceRequests() {
-  const open = serviceData.filter(s => s.status !== 'Resolved').length;
-  document.getElementById('service-count').textContent = open > 0 ? `· ${open} open` : '';
-  const wrap = document.getElementById('service-wrap');
-  if (!serviceData.length) { wrap.innerHTML = '<div class="rma-empty">No service requests yet</div>'; return; }
-  wrap.innerHTML = `<table><thead><tr>
-    <th>Vehicle</th><th>Issue</th><th>Status</th><th>Vendor</th>
-    <th>Submitted</th><th>Scheduled</th><th>Notes</th><th></th>
-  </tr></thead><tbody>${serviceData.map(r => {
-    const statusColors = { 'Pending':'badge-draft','Scheduled':'badge-issued','In Progress':'badge-partial','Resolved':'badge-received' };
-    const vendorOpts = ['','...contactsData...'].join(''); // built inline below
-    const vOpts = '<option value="">— None —</option>' + contactsData.map(c => `<option value="${c.id}" ${c.id === r.vendorId ? 'selected' : ''}>${c.name}</option>`).join('');
-    return `<tr class="fade-in ${r.status==='Resolved'?'row-received':''}">
-      <td><span class="vendor-name">${r.vehicleName}</span></td>
-      <td style="max-width:220px;font-size:12px">${r.issue}</td>
-      <td>
-        <select onchange="updateServiceStatus(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'Karla',sans-serif;outline:none;cursor:pointer">
-          ${['Pending','Scheduled','In Progress','Resolved'].map(s=>`<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}
-        </select>
-      </td>
-      <td>
-        <select onchange="updateServiceVendor(${r.id},this.value)" style="background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:3px 8px;font-size:11px;color:var(--text);font-family:'Karla',sans-serif;outline:none;cursor:pointer;max-width:140px">
-          ${vOpts}
-        </select>
-      </td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.dateSubmitted ? new Date(r.dateSubmitted+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
-      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${r.dateScheduled ? new Date(r.dateScheduled+'T00:00:00').toLocaleDateString('en-US',{month:'numeric',day:'numeric',year:'numeric'}) : '—'}</td>
-      <td><input type="text" value="${r.notes||''}" oninput="updateServiceNotes(${r.id},this.value)" placeholder="Notes…" style="background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;font-family:'Karla',sans-serif;outline:none;width:100%;padding:2px 0;min-width:130px"></td>
-      <td><button onclick="removeService(${r.id})" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px;transition:color 0.15s" onmouseover="this.style.color='#dc2626'" onmouseout="this.style.color='var(--muted)'">✕</button></td>
-    </tr>`;
-  }).join('')}</tbody></table>`;
-}
-
-let serviceTimer;
-async function updateServiceStatus(id, val) {
-  const r = serviceData.find(r => r.id === id); if (!r) return;
-  r.status = val; renderFleetCards(); renderServiceRequests();
-  await window._saveDoc('dashboard/service', { requests: serviceData });
-}
-async function updateServiceVendor(id, val) {
-  const r = serviceData.find(r => r.id === id); if (!r) return;
-  const vendorId = parseInt(val) || null;
-  const vendor = vendorId ? contactsData.find(c => c.id === vendorId) : null;
-  r.vendorId = vendorId; r.vendorName = vendor?.name || '';
-  await window._saveDoc('dashboard/service', { requests: serviceData });
-}
-function updateServiceNotes(id, val) {
-  const r = serviceData.find(r => r.id === id); if (!r) return;
-  r.notes = val; clearTimeout(serviceTimer);
-  serviceTimer = setTimeout(async () => { await window._saveDoc('dashboard/service', { requests: serviceData }); }, 800);
-}
-async function removeService(id) {
-  serviceData = serviceData.filter(r => r.id !== id);
-  renderFleetCards(); renderServiceRequests();
-  await window._saveDoc('dashboard/service', { requests: serviceData });
-}
-
-// ── Contacts ──────────────────────────────────────────────────────────────────
-let contactModalId = null;
-
-function openContactModal(id) {
-  contactModalId = id || null;
-  const c = id ? contactsData.find(c => c.id === id) : {};
-  document.getElementById('contact-modal-title').textContent = id ? 'Edit Contact' : 'Add Contact';
-  document.getElementById('cm-name').value    = c?.name    || '';
-  document.getElementById('cm-type').value    = c?.type    || 'Repair Shop';
-  document.getElementById('cm-phone').value   = c?.phone   || '';
-  document.getElementById('cm-address').value = c?.address || '';
-  document.getElementById('cm-notes').value   = c?.notes   || '';
-  document.getElementById('contact-modal').style.display = 'flex';
-}
-
-function closeContactModal() {
-  document.getElementById('contact-modal').style.display = 'none';
-  contactModalId = null;
-}
-
-async function saveContact() {
-  const name = document.getElementById('cm-name').value.trim();
-  if (!name) { alert('Business name is required.'); return; }
-  const contact = {
-    id:      contactModalId || Date.now(),
-    name,
-    type:    document.getElementById('cm-type').value,
-    phone:   document.getElementById('cm-phone').value.trim(),
-    address: document.getElementById('cm-address').value.trim(),
-    notes:   document.getElementById('cm-notes').value.trim(),
-  };
-  if (contactModalId) {
-    const idx = contactsData.findIndex(c => c.id === contactModalId);
-    if (idx >= 0) contactsData[idx] = contact; else contactsData.push(contact);
-  } else {
-    contactsData.push(contact);
-  }
-  closeContactModal();
-  renderContacts(); renderServiceRequests();
-  await window._saveDoc('dashboard/contacts', { contacts: contactsData });
-}
-
-async function removeContact(id) {
-  if (!confirm('Remove this contact?')) return;
-  contactsData = contactsData.filter(c => c.id !== id);
-  renderContacts(); renderServiceRequests();
-  await window._saveDoc('dashboard/contacts', { contacts: contactsData });
-}
-
-const CONTACT_TYPE_COLORS = {
-  'Repair Shop': { bg:'#eff6ff', fg:'#1d4ed8', border:'#0062a4' },
-  'Vinyl / Graphics': { bg:'#fdf4ff', fg:'#7e22ce', border:'#a855f7' },
-  'Tires': { bg:'#fff7ed', fg:'#c2410c', border:'#f97316' },
-  'Glass': { bg:'#f0fdf4', fg:'#15803d', border:'#22c55e' },
-  'Other': { bg:'#f5f6f8', fg:'#888896', border:'#d0d5dd' },
-};
-
-function renderContacts() {
-  const wrap = document.getElementById('contacts-wrap');
-  if (!contactsData.length) { wrap.innerHTML = '<div class="rma-empty">No contacts yet — add one above</div>'; return; }
-  wrap.innerHTML = `<div class="contacts-flat">${contactsData.map(c => {
-    const col = CONTACT_TYPE_COLORS[c.type] || CONTACT_TYPE_COLORS['Other'];
-    return `<div class="contact-card fade-in">
-      <div class="contact-card-header">
-        <span class="contact-name">${c.name}</span>
-        <span class="contact-type-badge" style="background:${col.bg};color:${col.fg};border-color:${col.border}">${c.type}</span>
-      </div>
-      ${c.phone   ? `<div class="contact-row"><span class="contact-label">Phone</span><a href="tel:${c.phone}" class="contact-phone">${c.phone}</a></div>` : ''}
-      ${c.address ? `<div class="contact-row"><span class="contact-label">Address</span><span class="contact-address">${c.address}</span><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" class="map-pin-link" title="Open in Google Maps"><i data-lucide="map-pin" class="map-pin-icon"></i></a></div>` : ''}
-      ${c.notes   ? `<div class="contact-notes">${c.notes}</div>` : ''}
-      <div class="contact-actions">
-        <button class="fleet-action-btn ghost" onclick="openContactModal(${c.id})">Edit</button>
-        <button class="fleet-action-btn danger" onclick="removeContact(${c.id})">✕</button>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
-  if (window.lucide) lucide.createIcons();
-}
-
-// Close modals on backdrop click
-document.addEventListener('click', e => {
-  if (e.target.id === 'fleet-modal')   closeVehicleModal();
-  if (e.target.id === 'service-modal') closeServiceModal();
-  if (e.target.id === 'contact-modal') closeContactModal();
+  waitForFirebase(()=>{ listenPO(); listenShowroom(); listenLogistics(); listenInventory(); listenRMA(); });
 });
