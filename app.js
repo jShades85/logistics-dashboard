@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // SLACK CONFIG — Order Request Integration
 // ═══════════════════════════════════════════════════════════════════════════════
-const SLACK_TOKEN   = 'PASTE_YOUR_TOKEN_HERE';   // xoxb-...
+const SLACK_TOKEN   = 'xoxe.xoxp-1-Mi0yLTYwODg1Mjg0NDc2MzQtODUyMzU5MTQ1NDI2MC0xMTE4MzE4MDc0OTIwMC0xMTE0ODUyNDU1MTEyMy1mNDE3OTlhNWE5NDM1NDQ3YzNiYTdlMzdmZmRhZTMzOWFmNjY3NmE1NjY0ZmNiODkwMjI5N2E4MTM2M2IxZmNi';   // xoxb-...
 const SLACK_CHANNEL = 'C068G11H94P';             // #team-purchase-orders
 const SLACK_RESOLVE_EMOJI = 'white_check_mark';  // ✅
 const SLACK_POLL_INTERVAL = 60000;               // 60 seconds
